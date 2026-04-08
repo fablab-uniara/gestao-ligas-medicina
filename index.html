@@ -20,7 +20,11 @@
         .sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); height: 100vh; padding: 24px; position: fixed; display: flex; flex-direction: column; align-items: center; }
         
         /* ESTILO DO LOGO NA SIDEBAR */
-        .sidebar-logo { width: 100%; max-width: 200px; height: auto; margin-bottom: 20px; display: block; }
+        .sidebar-logo { 
+            width: 130px; /* Largura fixa para não ocupar espaço demais */
+            height: auto; /* Mantém a proporção */
+            margin-bottom: 20px; /* Espaço para o subtítulo */
+            display: block;
         
         .nav-link { display: block; width: 100%; padding: 12px; color: var(--color-text); text-decoration: none; border-radius: var(--radius-base); cursor: pointer; margin-bottom: 8px; font-size: 14px; text-align: left; }
         .nav-link:hover { background: rgba(15, 28, 63, 0.1); } /* Hover suave com a cor da marca */
@@ -49,7 +53,7 @@
 <body>
     <aside class="sidebar">
         <img src="uniara-logo.png" alt="Logo Uniara Oficial" class="sidebar-logo">
-        <p style="font-size: 11px; margin-bottom: 20px; width: 100px; max-width: 100px; height: 100px; max-height: 100px; text-align: center; display: block; color: #666;">Gestão de Ligas Medicina</p>
+        <p style="font-size: 11px; margin-bottom: 20px; width: 130px; height: auto; text-align: center; color: #666;">Gestão de Ligas Medicina</p>
         <nav style="width: 100%;">
             <div class="nav-link" onclick="renderPage('dashboard')">📊 Dashboard</div>
             <div class="nav-link" onclick="renderPage('ligas')">🏥 Ligas</div>
