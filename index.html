@@ -10,7 +10,6 @@
             --color-background: #fcfcf9;
             --color-surface: #ffffff;
             --color-text: #13343b;
-            /* NOVA COR PRIMÁRIA: Azul Marinho Uniara (#0f1c3f) */
             --color-primary: #0f1c3f; 
             --color-border: rgba(94, 82, 64, 0.2);
             --radius-base: 8px;
@@ -19,7 +18,6 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--color-background); color: var(--color-text); display: flex; }
         .sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); height: 100vh; padding: 24px; position: fixed; display: flex; flex-direction: column; align-items: center; }
         
-        /* ESTILO DO LOGO NA SIDEBAR */
         .sidebar-logo { 
             width: 130px; /* Largura fixa para não ocupar espaço demais */
             height: auto; /* Mantém a proporção */
@@ -56,10 +54,15 @@
         <p style="font-size: 11px; margin-bottom: 20px; width: 130px; height: auto; text-align: center; color: #666;">Gestão de Ligas Medicina</p>
         <nav style="width: 100%;">
             <div class="nav-link" onclick="renderPage('dashboard')">📊 Dashboard</div>
+            <br>
             <div class="nav-link" onclick="renderPage('ligas')">🏥 Ligas</div>
+            <br>
             <div class="nav-link" onclick="renderPage('pesquisas')">🔬 Pesquisas</div>
+            <br>
             <div class="nav-link" onclick="renderPage('eventos')">📅 Eventos</div>
+            <br>
             <div class="nav-link" onclick="renderPage('extensao')">🎯 Extensão</div>
+            <br>
             <div class="nav-link" onclick="renderPage('atividades')">📝 Atividades</div>
         </nav>
     </aside>
