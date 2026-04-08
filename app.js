@@ -2,9 +2,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// COLOQUE SUAS CHAVES AQUI
 const firebaseConfig = {
-  apiKey: "AIzaSyDHs0DW6ppjwHcYSFSpXWfczIGt2IYaE18",
+  apiKey: "AIzaSyDHs0DW6ppjwHcYsfSpXWfczIGt2IYaE18",
   authDomain: "uniara-medicina-ligas.firebaseapp.com",
   projectId: "uniara-medicina-ligas",
   storageBucket: "uniara-medicina-ligas.firebasestorage.app",
@@ -281,7 +280,7 @@ async function deleteItem(type, id) {
     renderPage(currentPage);
 }
 
-// --- 9. EXPOSIÇÃO GLOBAL (CORRIGE O ERRO "IS NOT DEFINED") ---
+// --- 9. EXPOSIÇÃO GLOBAL (O QUE FAZ OS BOTÕES FUNCIONAREM) ---
 window.renderPage = renderPage;
 window.openLigaModal = openLigaModal;
 window.openPesquisaModal = openPesquisaModal;
