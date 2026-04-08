@@ -1,7 +1,6 @@
 // --- 1. CONFIGURAÇÃO DO FIREBASE ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-// NOVO: Importações do Firebase Storage
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 // ⚠️ ATENÇÃO: Substitua pelas suas chaves
@@ -16,7 +15,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const dbFirestore = getFirestore(app);
-const storage = getStorage(app); // NOVO: Inicializa o disco virtual
+const storage = getStorage(app);
 const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
 // --- 2. BANCO DE DADOS BASE ---
@@ -118,7 +117,7 @@ function openEventoModal() { showModal(`<h3 style="color:var(--color-primary); m
 function openExtensaoModal() { showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Projeto de Extensão</h3><form onsubmit="event.preventDefault(); saveExtensao();"><div class="form-group"><label>Título do Projeto</label><input id="exTitulo" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Linha Programática</label><select id="exLinha" class="form-control"><option>Saúde</option><option>Educação</option></select></div><div class="form-group"><label>Período</label><input id="exPer" class="form-control"></div></div><div class="form-group"><label>Tutor Responsável</label><input id="exTutor" class="form-control" required></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Criar Cadastro</button></div></form>`); }
 function openAtividadeModal() { showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Atividade LA (2025)</h3><form onsubmit="event.preventDefault(); saveAtividade();"><div class="form-group"><label>Título da Atividade</label><input id="aTitulo" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Data</label><input id="aData" type="date" class="form-control"></div><div class="form-group"><label>Local</label><input id="aLocal" class="form-control"></div></div><div class="form-group"><label>Resumo Descritivo</label><textarea id="aRes" class="form-control" rows="4"></textarea></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Salvar Atividade</button></div></form>`); }
 
-// --- 7. MODAIS DE RELATÓRIO E PDF (COM UPLOAD REAL) ---
+// --- 7. MODAIS DE RELATÓRIO E PDF ---
 function openRelatorioModal(type, itemId) {
     const item = db[type].find(i => i.id === itemId);
     let formHtml = ''; 
@@ -228,7 +227,7 @@ function saveEvento() { db.eventos.push({ id: Date.now(), titulo: document.getEl
 function saveExtensao() { db.extensao.push({ id: Date.now(), titulo: document.getElementById('exTitulo').value, linha: document.getElementById('exLinha').value, tutor: document.getElementById('exTutor').value }); finish('extensao'); }
 function saveAtividade() { db.atividades.push({ id: Date.now(), titulo: document.getElementById('aTitulo').value, data: document.getElementById('aData').value, local: document.getElementById('aLocal').value }); finish('atividades'); }
 
-// NOVO: Função de Salvamento com Upload Real
+// Função de Salvamento com Upload Real
 async function saveRelatorio(type, itemId) {
     const btn = document.getElementById('btnSalvarRelatorio');
     btn.innerText = '⏳ Fazendo Upload...';
