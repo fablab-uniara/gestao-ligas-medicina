@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// ⚠️ COLOQUE SUAS CHAVES AQUI:
+// COLOQUE SUAS CHAVES AQUI
 const firebaseConfig = {
   apiKey: "AIzaSyDHs0DW6ppjwHcYSFSpXWfczIGt2IYaE18",
   authDomain: "uniara-medicina-ligas.firebaseapp.com",
@@ -26,10 +26,9 @@ let db = {
 async function saveDb() { 
     try {
         await setDoc(uniaraRef, db);
-        console.log("Salvo com sucesso na nuvem!");
+        console.log("Dados salvos na nuvem.");
     } catch (error) {
         console.error("Erro ao salvar:", error);
-        alert("Erro ao salvar os dados. Verifique a conexão.");
     }
 }
 
@@ -57,14 +56,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 function renderPage(page) {
     currentPage = page;
     const content = document.getElementById('pageContent');
+    
     document.querySelectorAll('.nav-link').forEach(l => {
-        l.classList.toggle('active', l.getAttribute('onclick') && l.getAttribute('onclick').includes(`'${page}'`));
+        const onclickAttr = l.getAttribute('onclick') || '';
+        l.classList.toggle('active', onclickAttr.includes(`'${page}'`));
     });
 
     switch(page) {
         case 'dashboard':
             content.innerHTML = `
-                <div class="page-header"><h2>Gestão Acadêmica - Medicina</h2></div>
+                <div class="page-header"><h2>Gestão Acadêmica - Medicina Uniara</h2></div>
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 20px;">
                     <div class="card"><h3>Ligas</h3><p style="font-size:24px; color:var(--color-primary); font-weight:bold;">${db.ligas.length}</p></div>
                     <div class="card"><h3>Pesquisas</h3><p style="font-size:24px; color:var(--color-primary); font-weight:bold;">${db.pesquisas.length}</p></div>
@@ -89,10 +90,10 @@ function renderTable(title, type, data, headers, modalFn) {
                 <table>
                     <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}<th>Ações</th></tr></thead>
                     <tbody>
-                        ${data.length === 0 ? '<tr><td colspan="100%" style="text-align:center; padding:20px;">Nenhum registro.</td></tr>' : 
+                        ${data.length === 0 ? '<tr><td colspan="100%" style="text-align:center; padding:20px;">Nenhum registro encontrado.</td></tr>' : 
                         data.map(item => `<tr>${headers.map(h => `<td>${item[h.toLowerCase()] || '---'}</td>`).join('')}
                         <td>
-                            ${hasReport ? `<button class="btn btn-sm" style="background-color:#e0f2f1; color:#00695c; margin-right:8px; border:1px solid #00695c;" onclick="openRelatorioModal('${type}', ${item.id})">📝 Relatório / PDF</button>` : ''}
+                            ${hasReport ? `<button class="btn btn-sm" style="background-color:#e0f2f1; color:#00695c; margin-right:8px; border:1px solid #00695c;" onclick="openRelatorioModal('${type}', ${item.id})">📝 Relatório</button>` : ''}
                             <button class="btn btn-sm btn-danger" onclick="deleteItem('${type}', ${item.id})">Excluir</button>
                         </td></tr>`).join('')}
                     </tbody>
@@ -101,23 +102,42 @@ function renderTable(title, type, data, headers, modalFn) {
         </div>`;
 }
 
-// --- 6. GESTÃO DE MODAIS DE CADASTRO ---
+// --- 6. GESTÃO DE MODAIS ---
 function showModal(html) {
     const container = document.getElementById('modalContainer');
     container.innerHTML = `<div class="modal active" id="activeModal"><div class="modal-content">${html}<br><button class="btn btn-secondary" onclick="closeActiveModal()">Fechar</button></div></div>`;
 }
-function closeActiveModal() { const m = document.getElementById('activeModal'); if(m) m.remove(); }
 
-function openLigaModal() { showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Nova Liga Acadêmica</h3><form onsubmit="event.preventDefault(); saveLiga();"><div class="form-group"><label>Nome da Liga</label><input id="lNome" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Sigla</label><input id="lSigla" class="form-control" required></div><div class="form-group"><label>Tutor Responsável</label><input id="lTutor" class="form-control" required></div></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Salvar Liga</button></div></form>`); }
-function openPesquisaModal() { showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Pesquisa Científica (2025)</h3><form onsubmit="event.preventDefault(); savePesquisa();"><div class="form-row"><div class="form-group"><label>Ano</label><input id="pAno" class="form-control" type="number" value="2025"></div><div class="form-group"><label>Caracterização</label><select id="pCarac" class="form-control"><option>Relato de Caso</option><option>Relato de Experiência</option><option>Revisão Bibliográfica</option></select></div></div><div class="form-group"><label>Título da Pesquisa</label><input id="pTitulo" class="form-control" required></div><div class="form-group"><label>Área Temática</label><select id="pArea" class="form-control"><option>Comunicação</option><option>Cultura</option><option>Saúde</option><option>Tecnologia</option></select></div><h4 style="margin:15px 0 10px;">Tutor da Liga</h4><div class="form-group"><label>Nome</label><input id="pTutorNome" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Telefone</label><input id="pTutorTel" class="form-control"></div><div class="form-group"><label>Titulação</label><select id="pTutorTit" class="form-control"><option>Especialista</option><option>Mestre</option><option>Doutor</option></select></div></div><div style="background:#f9f9f9; padding:15px; border-radius:8px; margin-top:15px"><h4>Orientador</h4><div class="form-group"><label>Nome do Orientador (Se diferente)</label><input id="pOrientNome" class="form-control"></div></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Criar Cadastro</button></div></form>`); }
-function openEventoModal() { showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Evento Científico</h3><form onsubmit="event.preventDefault(); saveEvento();"><div class="form-row"><div class="form-group"><label>Responsável</label><input id="eResp" class="form-control"></div><div class="form-group"><label>Vínculo</label><select id="eVinc" class="form-control"><option>Professor Titular</option><option>Outro</option></select></div></div><div class="form-row"><div class="form-group"><label>Tipo de Evento</label><select id="eTipo" class="form-control"><option>Simpósio</option><option>Minicurso</option><option>Workshop</option></select></div><div class="form-group"><label>Eixo</label><select id="eEixo" class="form-control"><option>Saúde</option><option>Educação</option></select></div></div><div class="form-group"><label>Título</label><input id="eTitulo" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Data</label><input id="eData" type="date" class="form-control"></div><div class="form-group"><label>Modalidade</label><select id="eMod" class="form-control"><option>Presencial</option><option>Online</option></select></div></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Criar Cadastro</button></div></form>`); }
-function openExtensaoModal() { showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Projeto de Extensão</h3><form onsubmit="event.preventDefault(); saveExtensao();"><div class="form-group"><label>Título do Projeto</label><input id="exTitulo" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Linha Programática</label><select id="exLinha" class="form-control"><option>Saúde</option><option>Educação</option></select></div><div class="form-group"><label>Período</label><input id="exPer" class="form-control"></div></div><div class="form-group"><label>Tutor Responsável</label><input id="exTutor" class="form-control" required></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Criar Cadastro</button></div></form>`); }
-function openAtividadeModal() { showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Relatório de Atividade LA (2025)</h3><form onsubmit="event.preventDefault(); saveAtividade();"><div class="form-group"><label>Título da Atividade</label><input id="aTitulo" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Data</label><input id="aData" type="date" class="form-control"></div><div class="form-group"><label>Local</label><input id="aLocal" class="form-control"></div></div><div class="form-group"><label>Resumo Descritivo</label><textarea id="aRes" class="form-control" rows="4"></textarea></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Salvar Atividade</button></div></form>`); }
+function closeActiveModal() { 
+    const m = document.getElementById('activeModal'); 
+    if(m) m.remove(); 
+}
+
+function openLigaModal() { 
+    showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Nova Liga Acadêmica</h3><form onsubmit="event.preventDefault(); saveLiga();"><div class="form-group"><label>Nome da Liga</label><input id="lNome" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Sigla</label><input id="lSigla" class="form-control" required></div><div class="form-group"><label>Tutor Responsável</label><input id="lTutor" class="form-control" required></div></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Salvar Liga</button></div></form>`); 
+}
+
+function openPesquisaModal() { 
+    showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Pesquisa Científica</h3><form onsubmit="event.preventDefault(); savePesquisa();"><div class="form-row"><div class="form-group"><label>Ano</label><input id="pAno" class="form-control" type="number" value="2025"></div><div class="form-group"><label>Caracterização</label><select id="pCarac" class="form-control"><option>Relato de Caso</option><option>Relato de Experiência</option><option>Revisão Bibliográfica</option></select></div></div><div class="form-group"><label>Título da Pesquisa</label><input id="pTitulo" class="form-control" required></div><div class="form-group"><label>Área Temática</label><select id="pArea" class="form-control"><option>Comunicação</option><option>Cultura</option><option>Saúde</option><option>Tecnologia</option></select></div><h4 style="margin:15px 0 10px;">Tutor da Liga</h4><div class="form-group"><label>Nome</label><input id="pTutorNome" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Telefone</label><input id="pTutorTel" class="form-control"></div><div class="form-group"><label>Titulação</label><select id="pTutorTit" class="form-control"><option>Especialista</option><option>Mestre</option><option>Doutor</option></select></div></div><div style="background:#f9f9f9; padding:15px; border-radius:8px; margin-top:15px"><h4>Orientador</h4><div class="form-group"><label>Nome do Orientador (Se diferente)</label><input id="pOrientNome" class="form-control"></div></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Criar Cadastro</button></div></form>`); 
+}
+
+function openEventoModal() { 
+    showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Evento Científico</h3><form onsubmit="event.preventDefault(); saveEvento();"><div class="form-row"><div class="form-group"><label>Responsável</label><input id="eResp" class="form-control"></div><div class="form-group"><label>Vínculo</label><select id="eVinc" class="form-control"><option>Professor Titular</option><option>Outro</option></select></div></div><div class="form-row"><div class="form-group"><label>Tipo de Evento</label><select id="eTipo" class="form-control"><option>Simpósio</option><option>Minicurso</option><option>Workshop</option></select></div><div class="form-group"><label>Eixo</label><select id="eEixo" class="form-control"><option>Saúde</option><option>Educação</option></select></div></div><div class="form-group"><label>Título</label><input id="eTitulo" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Data</label><input id="eData" type="date" class="form-control"></div><div class="form-group"><label>Modalidade</label><select id="eMod" class="form-control"><option>Presencial</option><option>Online</option></select></div></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Criar Cadastro</button></div></form>`); 
+}
+
+function openExtensaoModal() { 
+    showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Projeto de Extensão</h3><form onsubmit="event.preventDefault(); saveExtensao();"><div class="form-group"><label>Título do Projeto</label><input id="exTitulo" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Linha Programática</label><select id="exLinha" class="form-control"><option>Saúde</option><option>Educação</option></select></div><div class="form-group"><label>Período</label><input id="exPer" class="form-control"></div></div><div class="form-group"><label>Tutor Responsável</label><input id="exTutor" class="form-control" required></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Criar Cadastro</button></div></form>`); 
+}
+
+function openAtividadeModal() { 
+    showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Atividade LA (2025)</h3><form onsubmit="event.preventDefault(); saveAtividade();"><div class="form-group"><label>Título da Atividade</label><input id="aTitulo" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Data</label><input id="aData" type="date" class="form-control"></div><div class="form-group"><label>Local</label><input id="aLocal" class="form-control"></div></div><div class="form-group"><label>Resumo Descritivo</label><textarea id="aRes" class="form-control" rows="4"></textarea></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Salvar Atividade</button></div></form>`); 
+}
 
 // --- 7. MODAIS DE RELATÓRIO E PDF ---
 function openRelatorioModal(type, itemId) {
     const item = db[type].find(i => i.id === itemId);
-    let formHtml = ''; let modalTitle = '';
+    let formHtml = ''; 
+    let modalTitle = '';
     const inst = "font-size:11px; color:#626c71; display:block;";
     const lbl = "font-weight:bold; color:var(--color-primary);";
 
@@ -170,7 +190,9 @@ function updateFileList(input) {
     const list = document.getElementById('fileListDisplay');
     if (input.files.length > 0) {
         list.innerHTML = `<strong>Arquivos:</strong><br>${Array.from(input.files).map(f => `📄 ${f.name}`).join('<br>')}`;
-    } else list.innerHTML = '';
+    } else {
+        list.innerHTML = '';
+    }
 }
 
 function gerarPDF(type, itemId) {
@@ -198,21 +220,55 @@ function gerarPDF(type, itemId) {
 }
 
 // --- 8. SALVAMENTOS DE DADOS ---
-async function finish(page) { await saveDb(); renderPage(page); closeActiveModal(); }
+async function finish(page) { 
+    await saveDb(); 
+    renderPage(page); 
+    closeActiveModal(); 
+}
 
-function saveLiga() { db.ligas.push({ id: Date.now(), nome: document.getElementById('lNome').value, sigla: document.getElementById('lSigla').value, tutor: document.getElementById('lTutor').value }); finish('ligas'); }
-function savePesquisa() { db.pesquisas.push({ id: Date.now(), titulo: document.getElementById('pTitulo').value, caracterizacao: document.getElementById('pCarac').value, tutor: document.getElementById('pTutorNome').value }); finish('pesquisas'); }
-function saveEvento() { db.eventos.push({ id: Date.now(), titulo: document.getElementById('eTitulo').value, data: document.getElementById('eData').value, tipo: document.getElementById('eTipo').value }); finish('eventos'); }
-function saveExtensao() { db.extensao.push({ id: Date.now(), titulo: document.getElementById('exTitulo').value, linha: document.getElementById('exLinha').value, tutor: document.getElementById('exTutor').value }); finish('extensao'); }
-function saveAtividade() { db.atividades.push({ id: Date.now(), titulo: document.getElementById('aTitulo').value, data: document.getElementById('aData').value, local: document.getElementById('aLocal').value }); finish('atividades'); }
+function saveLiga() { 
+    db.ligas.push({ id: Date.now(), nome: document.getElementById('lNome').value, sigla: document.getElementById('lSigla').value, tutor: document.getElementById('lTutor').value }); 
+    finish('ligas'); 
+}
+
+function savePesquisa() { 
+    db.pesquisas.push({ id: Date.now(), titulo: document.getElementById('pTitulo').value, caracterizacao: document.getElementById('pCarac').value, tutor: document.getElementById('pTutorNome').value }); 
+    finish('pesquisas'); 
+}
+
+function saveEvento() { 
+    db.eventos.push({ id: Date.now(), titulo: document.getElementById('eTitulo').value, data: document.getElementById('eData').value, tipo: document.getElementById('eTipo').value }); 
+    finish('eventos'); 
+}
+
+function saveExtensao() { 
+    db.extensao.push({ id: Date.now(), titulo: document.getElementById('exTitulo').value, linha: document.getElementById('exLinha').value, tutor: document.getElementById('exTutor').value }); 
+    finish('extensao'); 
+}
+
+function saveAtividade() { 
+    db.atividades.push({ id: Date.now(), titulo: document.getElementById('aTitulo').value, data: document.getElementById('aData').value, local: document.getElementById('aLocal').value }); 
+    finish('atividades'); 
+}
 
 function saveRelatorio(type, itemId) {
     const data = { itemId: itemId };
-    for (let i = 1; i <= 5; i++) { const el = document.getElementById(`r${i}`); if (el) data[`r${i}`] = el.value; }
+    for (let i = 1; i <= 5; i++) { 
+        const el = document.getElementById(`r${i}`); 
+        if (el) data[`r${i}`] = el.value; 
+    }
+    
     let col = type === 'pesquisas' ? 'relatoriosPesquisa' : type === 'eventos' ? 'relatoriosEvento' : 'relatoriosExtensao';
     const idx = db[col].findIndex(r => r.itemId === itemId);
-    if (idx >= 0) db[col][idx] = data; else db[col].push(data);
-    finish(currentPage); alert('✅ Relatório salvo na nuvem com sucesso!');
+    
+    if (idx >= 0) {
+        db[col][idx] = data; 
+    } else {
+        db[col].push(data);
+    }
+    
+    finish(currentPage); 
+    alert('Relatório salvo com sucesso!');
 }
 
 async function deleteItem(type, id) {
@@ -221,10 +277,11 @@ async function deleteItem(type, id) {
     if (type === 'pesquisas') db.relatoriosPesquisa = db.relatoriosPesquisa.filter(r => r.itemId !== id);
     if (type === 'eventos') db.relatoriosEvento = db.relatoriosEvento.filter(r => r.itemId !== id);
     if (type === 'extensao') db.relatoriosExtensao = db.relatoriosExtensao.filter(r => r.itemId !== id);
-    await saveDb(); renderPage(currentPage);
+    await saveDb(); 
+    renderPage(currentPage);
 }
 
-// --- 9. CORREÇÃO CRÍTICA DO ESCOPO MODULE (NÃO REMOVA ESTA PARTE) ---
+// --- 9. EXPOSIÇÃO GLOBAL (CORRIGE O ERRO "IS NOT DEFINED") ---
 window.renderPage = renderPage;
 window.openLigaModal = openLigaModal;
 window.openPesquisaModal = openPesquisaModal;
