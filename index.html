@@ -10,23 +10,28 @@
             --color-background: #fcfcf9;
             --color-surface: #ffffff;
             --color-text: #13343b;
-            --color-primary: #21808d;
+            /* NOVA COR PRIMÁRIA: Azul Marinho Uniara (#0f1c3f) */
+            --color-primary: #0f1c3f; 
             --color-border: rgba(94, 82, 64, 0.2);
             --radius-base: 8px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--color-background); color: var(--color-text); display: flex; }
-        .sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); height: 100vh; padding: 24px; position: fixed; }
-        .sidebar h1 { color: var(--color-primary); font-size: 20px; margin-bottom: 5px; }
-        .nav-link { display: block; padding: 12px; color: var(--color-text); text-decoration: none; border-radius: var(--radius-base); cursor: pointer; margin-bottom: 8px; }
-        .nav-link:hover { background: rgba(33, 128, 141, 0.1); }
+        .sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); height: 100vh; padding: 24px; position: fixed; display: flex; flex-direction: column; align-items: center; }
+        
+        /* ESTILO DO LOGO NA SIDEBAR */
+        .sidebar-logo { width: 100%; max-width: 200px; height: auto; margin-bottom: 20px; display: block; }
+        
+        .nav-link { display: block; width: 100%; padding: 12px; color: var(--color-text); text-decoration: none; border-radius: var(--radius-base); cursor: pointer; margin-bottom: 8px; font-size: 14px; text-align: left; }
+        .nav-link:hover { background: rgba(15, 28, 63, 0.1); } /* Hover suave com a cor da marca */
         .nav-link.active { background: var(--color-primary); color: white; }
+        
         .main-content { margin-left: 260px; flex: 1; padding: 40px; min-height: 100vh; }
         .card { background: white; padding: 24px; border-radius: 12px; border: 1px solid var(--color-border); box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--color-border); font-size: 14px; }
-        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 13px; }
         .btn-primary { background: var(--color-primary); color: white; }
         .btn-danger { background: #c0152f; color: white; }
         .btn-secondary { background: #ddd; color: #333; }
@@ -43,9 +48,9 @@
 </head>
 <body>
     <aside class="sidebar">
-        <h1>UNIARA</h1>
-        <p style="font-size: 11px; margin-bottom: 25px;">Gestão de Ligas Medicina</p>
-        <nav>
+        <img src="uniara-logo.png" alt="Logo Uniara Oficial" class="sidebar-logo">
+        <p style="font-size: 11px; margin-bottom: 25px; text-align: center; color: #666;">Gestão de Ligas Medicina</p>
+        <nav style="width: 100%;">
             <div class="nav-link" onclick="renderPage('dashboard')">📊 Dashboard</div>
             <div class="nav-link" onclick="renderPage('ligas')">🏥 Ligas</div>
             <div class="nav-link" onclick="renderPage('pesquisas')">🔬 Pesquisas</div>
@@ -58,6 +63,6 @@
         <div id="pageContent"></div>
     </main>
     <div id="modalContainer"></div>
-  <script type="module" src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
