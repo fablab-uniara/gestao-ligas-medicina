@@ -67,7 +67,7 @@ function renderPage(page) {
     switch(page) {
         case 'dashboard':
             content.innerHTML = `
-                <div class="page-header"><h2>Gestão Acadêmica - Medicina Uniara</h2></div>
+                <div class="page-header"><h2>Gestão de Ligas Acadêmicas - Medicina Uniara</h2></div>
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 20px;">
                     <div class="card"><h3>Ligas</h3><p style="font-size:24px; color:var(--color-primary); font-weight:bold;">${db.ligas.length}</p></div>
                     <div class="card"><h3>Pesquisas</h3><p style="font-size:24px; color:var(--color-primary); font-weight:bold;">${db.pesquisas.length}</p></div>
