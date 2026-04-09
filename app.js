@@ -85,7 +85,10 @@ function renderPage(page) {
                 <div class="page-header"><h2>Informações Legais e Créditos</h2></div>
                 
                 <div class="card" style="border-left: 5px solid var(--color-primary);">
-                    <div class="legal-title">Propriedade Intelectual</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                        <div class="legal-title" style="margin-bottom: 0;">Propriedade Intelectual</div>
+                        <img src="gbx-logo.png" alt="GBX Learning Tools" style="height: 35px; object-fit: contain;">
+                    </div>
                     <p style="font-size: 14px; color: #333; margin-bottom: 10px;">
                         <strong>Desenvolvido por:</strong> GBX - Learning Tools<br>
                         <strong>Todos os direitos reservados:</strong> A arquitetura, código-fonte, layout e metodologia de coleta de dados desta aplicação são de propriedade exclusiva da GBX - Learning Tools.
