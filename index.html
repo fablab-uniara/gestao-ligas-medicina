@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestão de Ligas Acadêmicas - Medicina - UNIARA</title>
+    <title>Gestão de Ligas Acadêmicas - Medicina UNIARA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
             --color-background: #fcfcf9;
             --color-surface: #ffffff;
             --color-text: #13343b;
+            /* Azul Marinho Uniara */
             --color-primary: #0f1c3f; 
             --color-border: rgba(94, 82, 64, 0.2);
             --radius-base: 8px;
@@ -18,14 +19,16 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--color-background); color: var(--color-text); display: flex; }
         .sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); height: 100vh; padding: 24px; position: fixed; display: flex; flex-direction: column; align-items: center; }
         
+        /* LOGO EXATAMENTE EM 100x100 */
         .sidebar-logo { 
-            width: 100px; /* Largura fixa para não ocupar espaço demais */
-            height: auto; /* Mantém a proporção */
+            width: 100px; 
+            height: 100px; 
+            object-fit: contain;
             margin-bottom: 20px;
         }
         
         .nav-link { display: block; width: 100%; padding: 12px; color: var(--color-text); text-decoration: none; border-radius: var(--radius-base); cursor: pointer; margin-bottom: 8px; font-size: 14px; text-align: left; }
-        .nav-link:hover { background: rgba(15, 28, 63, 0.1); } /* Hover suave com a cor da marca */
+        .nav-link:hover { background: rgba(15, 28, 63, 0.1); } 
         .nav-link.active { background: var(--color-primary); color: white; }
         
         .main-content { margin-left: 260px; flex: 1; padding: 40px; min-height: 100vh; }
@@ -46,20 +49,27 @@
         label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
         .form-control { width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px; }
         .anexos-list { font-size: 12px; color: #666; margin-top: 5px; }
+        
+        .legal-box { background: #f9f9f9; padding: 15px; border-radius: 8px; font-size: 13px; line-height: 1.6; color: #444; height: 250px; overflow-y: auto; border: 1px solid #ddd; margin-top: 10px; }
+        .legal-title { font-size: 16px; color: var(--color-primary); font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <aside class="sidebar">
         <img src="uniara-logo.png" alt="Logo Uniara Oficial" class="sidebar-logo">
-        <h3 style="font-size: 16px; margin-bottom: 20px; width: 250px; height: auto; text-align: center; color: #666;">Gestão de Ligas Acadêmicas Medicina</h3>
-        <nav style="width: 100%;">
+        <p style="font-size: 11px; margin-bottom: 25px; text-align: center; color: #666;">Gestão de Ligas Acadêmicas</p>
+        <nav style="width: 100%; flex: 1;">
             <div class="nav-link" onclick="renderPage('dashboard')">📊 Dashboard</div>
             <div class="nav-link" onclick="renderPage('ligas')">🏥 Ligas</div>
             <div class="nav-link" onclick="renderPage('pesquisas')">🔬 Pesquisas</div>
             <div class="nav-link" onclick="renderPage('eventos')">📅 Eventos</div>
             <div class="nav-link" onclick="renderPage('extensao')">🎯 Extensão</div>
             <div class="nav-link" onclick="renderPage('atividades')">📝 Atividades</div>
+            <div class="nav-link" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;" onclick="renderPage('sobre')">⚖️ Sobre & Legal</div>
         </nav>
+        <div style="font-size: 10px; text-align: center; color: #999; width: 100%; margin-top: auto;">
+            App by GBX Learning Tools<br>Uso restrito UNIARA
+        </div>
     </aside>
     <main class="main-content">
         <div id="pageContent"></div>
