@@ -17,14 +17,14 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--color-background); color: var(--color-text); }
         
-        /* --- TELA DE LOGIN & CADASTRO --- */
+        /* --- TELA DE LOGIN COM GOOGLE --- */
         #loginScreen { display: flex; height: 100vh; width: 100vw; align-items: center; justify-content: center; background: var(--color-primary); }
         .login-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
-        .login-card img { width: 120px; margin-bottom: 20px; }
-        .login-card input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-        .login-card button { width: 100%; padding: 12px; background: var(--color-primary); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; margin-bottom: 15px;}
-        .login-card button:hover { opacity: 0.9; }
-        .link-toggle { color: var(--color-primary); text-decoration: underline; cursor: pointer; font-size: 13px; font-weight: 600;}
+        .login-card img.logo { width: 120px; margin-bottom: 20px; }
+        
+        .btn-google { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 12px; background: white; color: #444; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .btn-google:hover { background: #f8f9fa; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .btn-google img { width: 20px; height: 20px; margin: 0; }
         
         /* --- APLICATIVO PRINCIPAL --- */
         #appContainer { display: none; display: flex; width: 100%; }
@@ -59,29 +59,17 @@
 <body>
 
     <div id="loginScreen">
-        <div class="login-card" id="formEntrar">
-            <img src="uniara-logo.png" alt="Logo Uniara">
-            <h3 style="margin-bottom: 20px; color: var(--color-primary);">Acesso ao Sistema</h3>
-            <form onsubmit="event.preventDefault(); fazerLogin();">
-                <input type="email" id="emailInput" placeholder="E-mail (@uniara.edu.br)" required>
-                <input type="password" id="senhaInput" placeholder="Senha" required>
-                <button type="submit" id="btnLogin">Entrar</button>
-                <p id="loginError" style="color: red; font-size: 12px; margin-bottom: 10px; display: none; font-weight:bold;"></p>
-            </form>
-            <span class="link-toggle" onclick="toggleAuthMode('registro')">Não tem conta? Solicite acesso aqui.</span>
-        </div>
-
-        <div class="login-card" id="formRegistro" style="display:none;">
-            <img src="uniara-logo.png" alt="Logo Uniara">
-            <h3 style="margin-bottom: 10px; color: var(--color-primary);">Solicitar Acesso</h3>
-            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Use seu e-mail institucional para criar a conta.</p>
-            <form onsubmit="event.preventDefault(); criarConta();">
-                <input type="email" id="regEmail" placeholder="E-mail (@uniara.edu.br)" required>
-                <input type="password" id="regSenha" placeholder="Crie uma Senha" required>
-                <button type="submit" id="btnRegistro">Solicitar Cadastro</button>
-                <p id="regError" style="color: red; font-size: 12px; margin-bottom: 10px; display: none; font-weight:bold;"></p>
-            </form>
-            <span class="link-toggle" onclick="toggleAuthMode('login')">Já possui acesso? Clique para Entrar.</span>
+        <div class="login-card">
+            <img src="uniara-logo.png" alt="Logo Uniara" class="logo">
+            <h3 style="margin-bottom: 10px; color: var(--color-primary);">Acesso ao Sistema</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 25px; line-height: 1.5;">Utilize seu e-mail institucional (@uniara.edu.br) para entrar ou solicitar cadastro.</p>
+            
+            <button id="btnGoogleLogin" class="btn-google" onclick="loginComGoogle()">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
+                Entrar com Google
+            </button>
+            
+            <p id="loginError" style="font-size: 13px; margin-top: 20px; display: none; font-weight:bold; padding: 10px; border-radius: 6px;"></p>
         </div>
     </div>
 
