@@ -23,7 +23,7 @@ const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
 // ⚠️ LISTA DE COORDENADORES (Bypass automático na aprovação)
 const EMAILS_ADMIN = [
-    "admin@uniara.edu.br" // Pode adicionar mais e-mails institucionais aqui
+      "gbraz@uniara.edu.br"
 ]; 
 
 // --- 2. BANCO DE DADOS BASE ---
