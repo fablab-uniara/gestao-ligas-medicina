@@ -2,8 +2,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-// 🔄 MUDANÇA: Adicionamos o getRedirectResult para "pescar" o usuário na volta
-import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+// 🔄 VOLTAMOS PARA O POPUP (Mais estável no GitHub Pages)
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHs0DW6ppjwHcYSFSpXWfczIGt2IYaE18",
@@ -39,21 +39,31 @@ function mostrarErro(mensagem, isSuccess = false) {
     msgBox.style.border = `1px solid ${isSuccess ? '#c8e6c9' : '#ffcdd2'}`;
 }
 
-function loginComGoogle() {
+async function loginComGoogle() {
     const btn = document.getElementById('btnGoogleLogin');
     document.getElementById('loginError').style.display = 'none';
-    btn.innerHTML = "Redirecionando..."; 
+    btn.innerHTML = "Abrindo pop-up do Google..."; 
     btn.disabled = true;
-    signInWithRedirect(auth, googleProvider);
-}
 
-// 🔄 NOVO: Força o navegador a processar o resultado do retorno do Google
-getRedirectResult(auth).then((result) => {
-    if (result) console.log("Google Auth Finalizado:", result.user.email);
-}).catch((error) => {
-    console.error("Erro no redirecionamento:", error);
-    mostrarErro("Erro ao autenticar. Tente limpar os cookies ou usar janela anônima.");
-});
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const email = result.user.email.toLowerCase();
+
+        // REGRA 1: Checagem de Domínio
+        if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
+            await signOut(auth);
+            mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
+            btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
+            btn.disabled = false;
+            return;
+        }
+    } catch (error) {
+        console.error("Erro no Popup:", error);
+        mostrarErro("A janela de login foi fechada ou bloqueada. Verifique a barra de endereços do seu navegador.");
+        btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
+        btn.disabled = false;
+    }
+}
 
 onAuthStateChanged(auth, async (user) => {
     const btn = document.getElementById('btnGoogleLogin');
@@ -64,15 +74,7 @@ onAuthStateChanged(auth, async (user) => {
 
     if (user) {
         const email = user.email.toLowerCase();
-        console.log("Usuário detectado pelo sistema:", email); // Log de debug
-
-        if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
-            await signOut(auth);
-            mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
-            return;
-        }
-
-        // 🔄 NOVO: Rede de proteção para erros de permissão do banco
+        
         try {
             const userRef = doc(dbFirestore, "usuarios", user.uid);
             const userDoc = await getDoc(userRef);
@@ -108,11 +110,10 @@ onAuthStateChanged(auth, async (user) => {
                 mostrarErro("✅ Cadastro solicitado com sucesso! A coordenação irá avaliar e liberar o seu acesso.", true);
             }
         } catch (dbError) {
-            console.error("Erro crítico no Firestore:", dbError);
+            console.error("Erro no BD:", dbError);
             await signOut(auth);
-            mostrarErro("Erro de acesso: Seu banco de dados Firestore está bloqueando a leitura (verifique as Regras de Segurança no painel do Firebase).");
+            mostrarErro("Erro interno: Falha ao ler permissões no banco de dados.");
         }
-
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('appContainer').style.display = 'none';
