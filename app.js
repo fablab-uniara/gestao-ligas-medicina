@@ -20,8 +20,14 @@ const storage = getStorage(app);
 const auth = getAuth(app);
 const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
-// ⚠️ Defina aqui o E-mail de quem pode APROVAR os alunos
-const EMAIL_COORDENADOR = "admin@uniara.edu.br"; 
+// ⚠️ Defina aqui a LISTA DE E-MAILS da Coordenação (quem pode aprovar alunos)
+// Você pode adicionar quantos quiser, sempre entre aspas e separados por vírgula.
+const EMAILS_ADMIN = [
+    "vferreira@uniara.edu.br",
+    "eclima@uniara.edu.br",
+    "rmprado@uniara.edu.br",
+    "gbraz@uniara.edu.br"
+];
 
 // --- 2. BANCO DE DADOS BASE ---
 let db = { ligas: [], pesquisas: [], eventos: [], extensao: [], atividades: [], relatoriosPesquisa: [], relatoriosEvento: [], relatoriosExtensao: [] };
@@ -34,8 +40,8 @@ function toggleAuthMode(mode) {
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // Se for o Coordenador, bypass automático (Cria o doc se não existir)
-        if (user.email === EMAIL_COORDENADOR) {
+        // Verifica se o e-mail logado está na lista de Administradores
+        if (EMAILS_ADMIN.includes(user.email)) {
             await setDoc(doc(dbFirestore, "usuarios", user.uid), { email: user.email, status: 'aprovado', role: 'admin' }, { merge: true });
             liberarAcesso(true);
             return;
