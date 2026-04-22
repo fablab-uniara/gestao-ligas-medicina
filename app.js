@@ -2,8 +2,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-// NOVO: createUserWithEmailAndPassword adicionado
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+// Importações modificadas para incluir o provedor do Google
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHs0DW6ppjwHcYSFSpXWfczIGt2IYaE18",
@@ -18,45 +18,95 @@ const app = initializeApp(firebaseConfig);
 const dbFirestore = getFirestore(app);
 const storage = getStorage(app);
 const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider(); // Configura o Google
 const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
-// ⚠️ Defina aqui a LISTA DE E-MAILS da Coordenação (quem pode aprovar alunos)
-// Você pode adicionar quantos quiser, sempre entre aspas e separados por vírgula.
+// ⚠️ LISTA DE COORDENADORES (Bypass automático na aprovação)
 const EMAILS_ADMIN = [
-    "vferreira@uniara.edu.br",
-    "eclima@uniara.edu.br",
-    "rmprado@uniara.edu.br",
-    "gbraz@uniara.edu.br"
-];
+    "admin@uniara.edu.br"
+]; 
 
 // --- 2. BANCO DE DADOS BASE ---
 let db = { ligas: [], pesquisas: [], eventos: [], extensao: [], atividades: [], relatoriosPesquisa: [], relatoriosEvento: [], relatoriosExtensao: [] };
 
-// --- 3. GESTÃO DE AUTENTICAÇÃO E APROVAÇÃO ---
-function toggleAuthMode(mode) {
-    document.getElementById('formEntrar').style.display = mode === 'login' ? 'block' : 'none';
-    document.getElementById('formRegistro').style.display = mode === 'registro' ? 'block' : 'none';
+// --- 3. GESTÃO DE AUTENTICAÇÃO COM GOOGLE ---
+function mostrarErro(mensagem, isSuccess = false) {
+    const msgBox = document.getElementById('loginError');
+    msgBox.innerText = mensagem;
+    msgBox.style.display = 'block';
+    msgBox.style.backgroundColor = isSuccess ? '#e8f5e9' : '#ffebee';
+    msgBox.style.color = isSuccess ? '#2e7d32' : '#c62828';
+    msgBox.style.border = `1px solid ${isSuccess ? '#c8e6c9' : '#ffcdd2'}`;
 }
 
+async function loginComGoogle() {
+    const btn = document.getElementById('btnGoogleLogin');
+    document.getElementById('loginError').style.display = 'none';
+    btn.innerHTML = "Carregando..."; btn.disabled = true;
+
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const email = result.user.email.toLowerCase();
+
+        // REGRA 1: Checa se é da Uniara (ou se é Admin)
+        if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
+            await signOut(auth);
+            mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
+            btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
+            btn.disabled = false;
+            return;
+        }
+        // Se passar, a função onAuthStateChanged vai tomar conta do roteamento
+    } catch (error) {
+        console.error(error);
+        mostrarErro("Erro na comunicação com o Google. Tente novamente.");
+        btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
+        btn.disabled = false;
+    }
+}
+
+// Ouve as mudanças de estado do usuário
 onAuthStateChanged(auth, async (user) => {
+    const btn = document.getElementById('btnGoogleLogin');
+    if (btn) {
+        btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
+        btn.disabled = false;
+    }
+
     if (user) {
-        // Verifica se o e-mail logado está na lista de Administradores
-        if (EMAILS_ADMIN.includes(user.email)) {
-            await setDoc(doc(dbFirestore, "usuarios", user.uid), { email: user.email, status: 'aprovado', role: 'admin' }, { merge: true });
+        const email = user.email.toLowerCase();
+        const userRef = doc(dbFirestore, "usuarios", user.uid);
+        const userDoc = await getDoc(userRef);
+
+        // REGRA 2: Se for Coordenador, entra direto e ganha a coroa
+        if (EMAILS_ADMIN.includes(email)) {
+            await setDoc(userRef, { email: email, nome: user.displayName || 'Coordenador', status: 'aprovado', role: 'admin' }, { merge: true });
             liberarAcesso(true);
             return;
         }
 
-        // Se for um usuário normal, verifica se foi aprovado
-        const userDoc = await getDoc(doc(dbFirestore, "usuarios", user.uid));
-        if (userDoc.exists() && userDoc.data().status === 'aprovado') {
-            liberarAcesso(false);
+        // REGRA 3: Se for aluno comum, verifica o status
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            if (data.status === 'aprovado') {
+                liberarAcesso(false);
+            } else if (data.status === 'pendente') {
+                await signOut(auth);
+                mostrarErro("⏳ Sua conta está em análise. Aguarde a aprovação da coordenação para acessar.");
+            } else {
+                await signOut(auth);
+                mostrarErro("🚫 O acesso para este e-mail foi bloqueado.");
+            }
         } else {
-            // Acesso Pendente/Negado
-            signOut(auth);
-            document.getElementById('loginError').innerText = "⏳ Sua conta está em análise pela coordenação. Aguarde a aprovação para entrar.";
-            document.getElementById('loginError').style.display = 'block';
-            toggleAuthMode('login');
+            // REGRA 4: É o primeiro acesso do aluno! Cria a conta como PENDENTE e avisa.
+            await setDoc(userRef, {
+                email: email,
+                nome: user.displayName || 'Aluno',
+                status: 'pendente',
+                dataSolicitacao: new Date().toLocaleDateString('pt-BR')
+            });
+            await signOut(auth);
+            mostrarErro("✅ Cadastro solicitado com sucesso! A coordenação irá avaliar e liberar o seu acesso.", true);
         }
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
@@ -69,59 +119,6 @@ async function liberarAcesso(isAdmin) {
     document.getElementById('appContainer').style.display = 'flex';
     document.getElementById('menuAdmin').style.display = isAdmin ? 'block' : 'none';
     await carregarDadosIniciais();
-}
-
-async function fazerLogin() {
-    const btn = document.getElementById('btnLogin');
-    const erroMsg = document.getElementById('loginError');
-    btn.innerText = "Verificando..."; btn.disabled = true; erroMsg.style.display = 'none';
-
-    try {
-        await signInWithEmailAndPassword(auth, document.getElementById('emailInput').value, document.getElementById('senhaInput').value);
-        btn.innerText = "Entrar"; btn.disabled = false;
-        document.getElementById('senhaInput').value = '';
-    } catch (error) {
-        erroMsg.innerText = "E-mail ou senha incorretos."; erroMsg.style.display = 'block';
-        btn.innerText = "Entrar"; btn.disabled = false;
-    }
-}
-
-async function criarConta() {
-    const email = document.getElementById('regEmail').value.trim().toLowerCase();
-    const senha = document.getElementById('regSenha').value;
-    const btn = document.getElementById('btnRegistro');
-    const erroMsg = document.getElementById('regError');
-
-    // REGRA 1: Só passa se for @uniara.edu.br
-    if (!email.endsWith("@uniara.edu.br")) {
-        erroMsg.innerText = "⚠️ Obrigatório o uso de e-mail institucional (@uniara.edu.br).";
-        erroMsg.style.display = 'block';
-        return;
-    }
-
-    btn.innerText = "Solicitando..."; btn.disabled = true; erroMsg.style.display = 'none';
-
-    try {
-        // Cria o usuário
-        const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-        // Cria o "Crachá" dele no banco de dados com status Pendente
-        await setDoc(doc(dbFirestore, "usuarios", userCredential.user.uid), {
-            email: email,
-            status: 'pendente',
-            dataSolicitacao: new Date().toLocaleDateString('pt-BR')
-        });
-        
-        // Desloga o usuário e mostra mensagem de sucesso
-        await signOut(auth);
-        alert("✅ Solicitação enviada com sucesso!\nA coordenação irá avaliar o seu pedido. Você será avisado quando o acesso for liberado.");
-        toggleAuthMode('login');
-        
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') erroMsg.innerText = "Este e-mail já foi solicitado.";
-        else erroMsg.innerText = "Erro ao criar conta. A senha deve ter no mínimo 6 caracteres.";
-        erroMsg.style.display = 'block';
-    }
-    btn.innerText = "Solicitar Cadastro"; btn.disabled = false;
 }
 
 function fazerLogout() { signOut(auth); }
@@ -146,7 +143,7 @@ async function saveDb() {
 
 let currentPage = 'dashboard';
 
-// --- 5. RENDERIZAÇÃO DA TELA (INCLUINDO ADMIN) ---
+// --- 5. RENDERIZAÇÃO DA TELA ---
 async function renderPage(page) {
     currentPage = page;
     const content = document.getElementById('pageContent');
@@ -166,14 +163,13 @@ async function renderPage(page) {
         case 'extensao': content.innerHTML = renderTable('Projetos de Extensão', 'extensao', db.extensao, ['Título', 'Linha', 'Tutor'], 'openExtensaoModal()'); break;
         case 'atividades': content.innerHTML = renderTable('Relatório de Atividades', 'atividades', db.atividades, ['Título', 'Data', 'Local'], 'openAtividadeModal()'); break;
         
-        // NOVO: ABA ADMIN PARA APROVAR USUÁRIOS
         case 'admin':
-            content.innerHTML = `<div class="page-header"><h2>👑 Gestão de Acessos</h2><p style="color:#666;">Aprove ou bloqueie usuários que solicitaram cadastro.</p></div><div id="adminList">Carregando usuários...</div>`;
+            content.innerHTML = `<div class="page-header"><h2>👑 Gestão de Acessos</h2><p style="color:#666;">Aprove ou bloqueie usuários que solicitaram cadastro com contas do Google.</p></div><div id="adminList">Carregando usuários...</div>`;
             carregarPainelAdmin();
             break;
 
         case 'sobre': 
-            content.innerHTML = `<div class="page-header"><h2>Informações Legais e Créditos</h2></div><div class="card" style="border-left: 5px solid var(--color-primary);"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;"><div class="legal-title" style="margin-bottom: 0;">Propriedade Intelectual</div><img src="gbx-logo.png" alt="GBX Learning Tools" style="height: 35px; object-fit: contain;"></div><p style="font-size: 14px; color: #333; margin-bottom: 10px;"><strong>Desenvolvido por:</strong> GBX - Learning Tools</p></div>`;
+            content.innerHTML = `<div class="page-header"><h2>Informações Legais e Créditos</h2></div><div class="card" style="border-left: 5px solid var(--color-primary);"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;"><div class="legal-title" style="margin-bottom: 0;">Propriedade Intelectual</div><img src="gbx-logo.png" alt="GBX Learning Tools" style="height: 35px; object-fit: contain;"></div><p style="font-size: 14px; color: #333; margin-bottom: 10px;"><strong>Desenvolvido por:</strong> GBX - Learning Tools</p><p style="font-size: 14px; color: #333; background: #eef2f5; padding: 10px; border-radius: 5px;"><strong>Termo de Cessão:</strong> Uso restrito para as Ligas Acadêmicas do curso de Medicina da UNIARA.</p></div>`;
             break;
     }
 }
@@ -182,15 +178,16 @@ async function renderPage(page) {
 async function carregarPainelAdmin() {
     try {
         const querySnapshot = await getDocs(collection(dbFirestore, "usuarios"));
-        let html = `<table><thead><tr><th>E-mail</th><th>Data Solicitação</th><th>Status Atual</th><th>Ação</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Nome</th><th>E-mail</th><th>Data Solicitação</th><th>Status Atual</th><th>Ação</th></tr></thead><tbody>`;
         
         querySnapshot.forEach((documento) => {
             const u = documento.data();
             const id = documento.id;
-            if (u.role === 'admin') return; // Pula a si mesmo
+            if (u.role === 'admin') return; 
             
             const isPendente = u.status === 'pendente';
             html += `<tr>
+                <td>${u.nome || '---'}</td>
                 <td>${u.email}</td>
                 <td>${u.dataSolicitacao || '---'}</td>
                 <td><span style="padding:4px 8px; border-radius:4px; font-weight:bold; font-size:12px; background:${isPendente ? '#ffebee' : '#e8f5e9'}; color:${isPendente ? '#c62828' : '#2e7d32'};">${u.status.toUpperCase()}</span></td>
@@ -205,14 +202,14 @@ async function carregarPainelAdmin() {
         html += `</tbody></table>`;
         document.getElementById('adminList').innerHTML = html;
     } catch (e) {
-        document.getElementById('adminList').innerHTML = "Erro ao carregar usuários. Você tem permissão?";
+        document.getElementById('adminList').innerHTML = "Erro ao carregar usuários.";
     }
 }
 
 async function mudarStatusUsuario(userId, novoStatus) {
     if(!confirm(`Deseja realmente alterar o status deste usuário para ${novoStatus.toUpperCase()}?`)) return;
     await updateDoc(doc(dbFirestore, "usuarios", userId), { status: novoStatus });
-    carregarPainelAdmin(); // Recarrega a tabela
+    carregarPainelAdmin();
 }
 
 function renderTable(title, type, data, headers, modalFn) {
@@ -220,7 +217,7 @@ function renderTable(title, type, data, headers, modalFn) {
     return `<div class="card"><div class="card-header"><h2>${title}</h2><button class="btn btn-primary" onclick="${modalFn}">+ Novo Registro</button></div><div style="overflow-x:auto"><table><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}<th>Ações</th></tr></thead><tbody>${data.length === 0 ? '<tr><td colspan="100%" style="text-align:center; padding:20px;">Nenhum registro encontrado.</td></tr>' : data.map(item => `<tr>${headers.map(h => `<td>${item[h.toLowerCase()] || '---'}</td>`).join('')}<td>${hasReport ? `<button class="btn btn-sm" style="background-color:#e0f2f1; color:#00695c; margin-right:8px; border:1px solid #00695c;" onclick="openRelatorioModal('${type}', ${item.id})">📝 Relatório</button>` : ''}<button class="btn btn-sm btn-danger" onclick="deleteItem('${type}', ${item.id})">Excluir</button></td></tr>`).join('')}</tbody></table></div></div>`;
 }
 
-// --- 6. MODAIS, UPLOADS, E PDF (MANTIDOS INTACTOS) ---
+// --- 6. MODAIS, UPLOADS, E PDF ---
 function showModal(html) { const container = document.getElementById('modalContainer'); container.innerHTML = `<div class="modal active" id="activeModal"><div class="modal-content">${html}<br><button class="btn btn-secondary" onclick="closeActiveModal()">Fechar</button></div></div>`; }
 function closeActiveModal() { const m = document.getElementById('activeModal'); if(m) m.remove(); }
 function openLigaModal() { showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">Nova Liga Acadêmica</h3><form onsubmit="event.preventDefault(); saveLiga();"><div class="form-group"><label>Nome da Liga</label><input id="lNome" class="form-control" required></div><div class="form-row"><div class="form-group"><label>Sigla</label><input id="lSigla" class="form-control" required></div><div class="form-group"><label>Tutor Responsável</label><input id="lTutor" class="form-control" required></div></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary">Salvar Liga</button></div></form>`); }
@@ -269,4 +266,4 @@ async function saveRelatorio(type, itemId) {
 
 async function deleteItem(type, id) { if(!confirm('Deseja excluir na nuvem este registro e seus relatórios?')) return; db[type] = db[type].filter(i => i.id !== id); if (type === 'pesquisas') db.relatoriosPesquisa = db.relatoriosPesquisa.filter(r => r.itemId !== id); if (type === 'eventos') db.relatoriosEvento = db.relatoriosEvento.filter(r => r.itemId !== id); if (type === 'extensao') db.relatoriosExtensao = db.relatoriosExtensao.filter(r => r.itemId !== id); await saveDb(); renderPage(currentPage); }
 
-window.renderPage = renderPage; window.openLigaModal = openLigaModal; window.openPesquisaModal = openPesquisaModal; window.openEventoModal = openEventoModal; window.openExtensaoModal = openExtensaoModal; window.openAtividadeModal = openAtividadeModal; window.openRelatorioModal = openRelatorioModal; window.closeActiveModal = closeActiveModal; window.deleteItem = deleteItem; window.gerarPDF = gerarPDF; window.updateFileList = updateFileList; window.saveLiga = saveLiga; window.savePesquisa = savePesquisa; window.saveEvento = saveEvento; window.saveExtensao = saveExtensao; window.saveAtividade = saveAtividade; window.saveRelatorio = saveRelatorio; window.fazerLogin = fazerLogin; window.fazerLogout = fazerLogout; window.toggleAuthMode = toggleAuthMode; window.criarConta = criarConta; window.mudarStatusUsuario = mudarStatusUsuario;
+window.renderPage = renderPage; window.openLigaModal = openLigaModal; window.openPesquisaModal = openPesquisaModal; window.openEventoModal = openEventoModal; window.openExtensaoModal = openExtensaoModal; window.openAtividadeModal = openAtividadeModal; window.openRelatorioModal = openRelatorioModal; window.closeActiveModal = closeActiveModal; window.deleteItem = deleteItem; window.gerarPDF = gerarPDF; window.updateFileList = updateFileList; window.saveLiga = saveLiga; window.savePesquisa = savePesquisa; window.saveEvento = saveEvento; window.saveExtensao = saveExtensao; window.saveAtividade = saveAtividade; window.saveRelatorio = saveRelatorio; window.loginComGoogle = loginComGoogle; window.fazerLogout = fazerLogout; window.mudarStatusUsuario = mudarStatusUsuario;
