@@ -2,20 +2,23 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+// NOVO: Importação do módulo de Autenticação
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-// CREDENCIAIS REAIS INSERIDAS
+// ⚠️ ATENÇÃO: COLOQUE SUAS CHAVES AQUI
 const firebaseConfig = {
-  apiKey: "AIzaSyDHs0DW6ppjwHcYsfSpXWfczIGt2IYaE18",
-  authDomain: "uniara-medicina-ligas.firebaseapp.com",
-  projectId: "uniara-medicina-ligas",
-  storageBucket: "uniara-medicina-ligas.firebasestorage.app",
-  messagingSenderId: "556596933742",
-  appId: "1:556596933742:web:b8f4783ae9fb7bd375a27f"
+  apiKey: "COLE_SUA_API_KEY_AQUI",
+  authDomain: "COLE_SEU_AUTH_DOMAIN_AQUI",
+  projectId: "COLE_SEU_PROJECT_ID_AQUI",
+  storageBucket: "COLE_SEU_STORAGE_BUCKET_AQUI",
+  messagingSenderId: "COLE_SEU_MESSAGING_SENDER_ID_AQUI",
+  appId: "COLE_SEU_APP_ID_AQUI"
 };
 
 const app = initializeApp(firebaseConfig);
 const dbFirestore = getFirestore(app);
 const storage = getStorage(app);
+const auth = getAuth(app); // Inicializa a Autenticação
 const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
 // --- 2. BANCO DE DADOS BASE ---
@@ -24,20 +27,55 @@ let db = {
     relatoriosPesquisa: [], relatoriosEvento: [], relatoriosExtensao: []
 };
 
-// --- 3. SALVAMENTO NA NUVEM ---
-async function saveDb() { 
+// --- 3. GESTÃO DE AUTENTICAÇÃO (LOGIN/LOGOUT) ---
+// Ouve se o usuário entrou ou saiu para mudar a tela
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // Usuário Logado: Esconde login, mostra painel e baixa os dados
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appContainer').style.display = 'flex';
+        await carregarDadosIniciais();
+    } else {
+        // Usuário Deslogado: Mostra login, esconde painel
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appContainer').style.display = 'none';
+    }
+});
+
+// Função executada ao clicar no botão "Entrar"
+async function fazerLogin() {
+    const email = document.getElementById('emailInput').value;
+    const senha = document.getElementById('senhaInput').value;
+    const btn = document.getElementById('btnLogin');
+    const erroMsg = document.getElementById('loginError');
+    
+    btn.innerText = "Carregando...";
+    btn.disabled = true;
+    erroMsg.style.display = 'none';
+
     try {
-        await setDoc(uniaraRef, db);
-        console.log("Dados salvos na nuvem.");
+        await signInWithEmailAndPassword(auth, email, senha);
+        // O onAuthStateChanged vai automaticamente mudar a tela
+        btn.innerText = "Entrar";
+        btn.disabled = false;
+        document.getElementById('emailInput').value = '';
+        document.getElementById('senhaInput').value = '';
     } catch (error) {
-        console.error("Erro ao salvar:", error);
+        console.error("Erro no login:", error);
+        erroMsg.style.display = 'block';
+        btn.innerText = "Entrar";
+        btn.disabled = false;
     }
 }
 
-// --- 4. INICIALIZAÇÃO ASSÍNCRONA ---
-let currentPage = 'dashboard';
+// Função executada ao clicar em "Sair do Sistema"
+function fazerLogout() {
+    signOut(auth).catch((error) => console.error("Erro ao sair:", error));
+}
 
-document.addEventListener('DOMContentLoaded', async () => { 
+
+// --- 4. CARREGAMENTO E SALVAMENTO DE DADOS ---
+async function carregarDadosIniciais() {
     try {
         const docSnap = await getDoc(uniaraRef);
         if (docSnap.exists()) {
@@ -48,11 +86,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             await saveDb();
         }
+        renderPage('dashboard'); 
     } catch (error) {
         console.error("Erro ao carregar do Firebase:", error);
     }
-    renderPage('dashboard'); 
-});
+}
+
+async function saveDb() { 
+    try {
+        await setDoc(uniaraRef, db);
+        console.log("Dados salvos na nuvem.");
+    } catch (error) { console.error("Erro ao salvar:", error); }
+}
+
+let currentPage = 'dashboard';
 
 // --- 5. RENDERIZAÇÃO DA TELA ---
 function renderPage(page) {
@@ -83,7 +130,6 @@ function renderPage(page) {
         case 'sobre': 
             content.innerHTML = `
                 <div class="page-header"><h2>Informações Legais e Créditos</h2></div>
-                
                 <div class="card" style="border-left: 5px solid var(--color-primary);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                         <div class="legal-title" style="margin-bottom: 0;">Propriedade Intelectual</div>
@@ -97,25 +143,21 @@ function renderPage(page) {
                         <strong>Termo de Cessão:</strong> A GBX - Learning Tools cede os direitos de uso desta plataforma especificamente para as <strong>Ligas Acadêmicas do curso de Medicina da UNIARA</strong>, visando o gerenciamento de seus relatórios acadêmicos, eventos e projetos de extensão. É vedada a comercialização, reprodução não autorizada ou uso por terceiros fora deste escopo sem autorização prévia.
                     </p>
                 </div>
-
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                     <div class="card">
                         <div class="legal-title">Termos de Uso</div>
                         <div class="legal-box">
                             <strong>1. Finalidade da Plataforma:</strong> Esta plataforma foi desenvolvida para o registro e gestão de atividades acadêmicas das Ligas de Medicina da UNIARA. Seu uso deve ser estritamente acadêmico e institucional.<br><br>
-                            <strong>2. Responsabilidade dos Dados:</strong> Os usuários (presidentes de ligas, diretores e tutores) são os únicos responsáveis pela veracidade e exatidão das informações cadastradas (pesquisas, eventos, atividades e extensão).<br><br>
-                            <strong>3. Armazenamento em Nuvem:</strong> Os dados e anexos submetidos são armazenados em infraestrutura de nuvem (Google Firebase/Storage), operando com protocolos de segurança padrão de mercado. O usuário concorda com o envio de documentos para esta infraestrutura visando a composição de relatórios finais.<br><br>
-                            <strong>4. Geração de Documentos:</strong> Os PDFs gerados pela plataforma refletem os inputs dos usuários e servem como relatórios-base, sujeitos à validação física e assinaturas dos responsáveis legais na instituição.
+                            <strong>2. Responsabilidade dos Dados:</strong> Os usuários são responsáveis pela exatidão das informações.<br><br>
+                            <strong>3. Armazenamento em Nuvem:</strong> Os dados e anexos submetidos são armazenados em infraestrutura de nuvem com protocolos de segurança padrão.
                         </div>
                     </div>
-                    
                     <div class="card">
                         <div class="legal-title">Política de Privacidade</div>
                         <div class="legal-box">
-                            <strong>1. Coleta de Dados Pessoais:</strong> Coletamos informações estritamente necessárias para a gestão acadêmica, tais como: nome de alunos e tutores, titulação, contato telefônico e e-mail institucional/pessoal.<br><br>
-                            <strong>2. Uso dos Dados (LGPD):</strong> O tratamento dos dados cadastrados atende às finalidades acadêmicas da UNIARA, não sendo vendidos, alugados ou cedidos a terceiros para fins comerciais. O objetivo exclusivo é a documentação comprobatória de horas complementares, pesquisas e extensão.<br><br>
-                            <strong>3. Evidências e Anexos:</strong> Fotos, listas de presença e materiais de apoio enviados (upload) ficarão armazenados e vinculados unicamente aos relatórios acadêmicos correspondentes, com acesso restrito aos administradores da plataforma no âmbito da coordenação.<br><br>
-                            <strong>4. Retenção e Exclusão:</strong> Os dados permanecerão ativos enquanto a plataforma estiver em uso pela instituição. Solicitações de exclusão de dados pessoais devem ser encaminhadas à coordenação das Ligas da Medicina.
+                            <strong>1. Coleta de Dados Pessoais:</strong> Coletamos informações estritamente necessárias para a gestão acadêmica.<br><br>
+                            <strong>2. Uso dos Dados (LGPD):</strong> O tratamento dos dados atende às finalidades acadêmicas da UNIARA.<br><br>
+                            <strong>3. Retenção e Exclusão:</strong> Os dados permanecerão ativos enquanto a plataforma estiver em uso.
                         </div>
                     </div>
                 </div>
@@ -145,7 +187,7 @@ function renderTable(title, type, data, headers, modalFn) {
         </div>`;
 }
 
-// --- 6. GESTÃO DE MODAIS ---
+// --- 6. GESTÃO DE MODAIS E FORMS ---
 function showModal(html) { const container = document.getElementById('modalContainer'); container.innerHTML = `<div class="modal active" id="activeModal"><div class="modal-content">${html}<br><button class="btn btn-secondary" onclick="closeActiveModal()">Fechar</button></div></div>`; }
 function closeActiveModal() { const m = document.getElementById('activeModal'); if(m) m.remove(); }
 
@@ -226,7 +268,6 @@ function gerarPDF(type, itemId) {
     html2pdf().set({ margin: 15, filename: `${docTitle}.pdf`, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(printElement).save();
 }
 
-// --- 8. SALVAMENTOS DE DADOS E UPLOADS ---
 async function finish(page) { await saveDb(); renderPage(page); closeActiveModal(); }
 
 function saveLiga() { db.ligas.push({ id: Date.now(), nome: document.getElementById('lNome').value, sigla: document.getElementById('lSigla').value, tutor: document.getElementById('lTutor').value }); finish('ligas'); }
@@ -281,7 +322,7 @@ async function deleteItem(type, id) {
     await saveDb(); renderPage(currentPage);
 }
 
-// --- 9. EXPOSIÇÃO GLOBAL ---
+// --- EXPOSIÇÃO GLOBAL ---
 window.renderPage = renderPage;
 window.openLigaModal = openLigaModal;
 window.openPesquisaModal = openPesquisaModal;
@@ -299,3 +340,5 @@ window.saveEvento = saveEvento;
 window.saveExtensao = saveExtensao;
 window.saveAtividade = saveAtividade;
 window.saveRelatorio = saveRelatorio;
+window.fazerLogin = fazerLogin;
+window.fazerLogout = fazerLogout;
