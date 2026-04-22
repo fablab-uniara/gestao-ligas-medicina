@@ -2,17 +2,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-// NOVO: Importação do módulo de Autenticação
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-// ⚠️ ATENÇÃO: COLOQUE SUAS CHAVES AQUI
+// SUAS CREDENCIAIS REAIS (Conforme imagem enviada)
 const firebaseConfig = {
-  apiKey: "COLE_SUA_API_KEY_AQUI",
-  authDomain: "COLE_SEU_AUTH_DOMAIN_AQUI",
-  projectId: "COLE_SEU_PROJECT_ID_AQUI",
-  storageBucket: "COLE_SEU_STORAGE_BUCKET_AQUI",
-  messagingSenderId: "COLE_SEU_MESSAGING_SENDER_ID_AQUI",
-  appId: "COLE_SEU_APP_ID_AQUI"
+  apiKey: "AIzaSyDHs0DW6ppjwHcYsfSpXWfczIGt2IYaE18",
+  authDomain: "uniara-medicina-ligas.firebaseapp.com",
+  projectId: "uniara-medicina-ligas",
+  storageBucket: "uniara-medicina-ligas.firebasestorage.app",
+  messagingSenderId: "556596933742",
+  appId: "1:556596933742:web:b8f4783ae9fb7bd375a27f"
 };
 
 const app = initializeApp(firebaseConfig);
