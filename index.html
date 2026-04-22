@@ -10,23 +10,26 @@
             --color-background: #fcfcf9;
             --color-surface: #ffffff;
             --color-text: #13343b;
-            /* Azul Marinho Uniara */
             --color-primary: #0f1c3f; 
             --color-border: rgba(94, 82, 64, 0.2);
             --radius-base: 8px;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--color-background); color: var(--color-text); display: flex; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--color-background); color: var(--color-text); }
+        
+        /* --- TELA DE LOGIN --- */
+        #loginScreen { display: flex; height: 100vh; width: 100vw; align-items: center; justify-content: center; background: var(--color-primary); }
+        .login-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
+        .login-card img { width: 120px; margin-bottom: 20px; }
+        .login-card input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+        .login-card button { width: 100%; padding: 12px; background: var(--color-primary); color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        .login-card button:hover { opacity: 0.9; }
+        
+        /* --- APLICATIVO PRINCIPAL --- */
+        #appContainer { display: none; /* Escondido por padrão até fazer login */ display: flex; width: 100%; }
+        
         .sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); height: 100vh; padding: 24px; position: fixed; display: flex; flex-direction: column; align-items: center; }
-        
-        /* LOGO EXATAMENTE EM 100x100 */
-        .sidebar-logo { 
-            width: 100px; 
-            height: 100px; 
-            object-fit: contain;
-            margin-bottom: 20px;
-        }
-        
+        .sidebar-logo { width: 100px; height: 100px; object-fit: contain; margin-bottom: 20px; }
         .nav-link { display: block; width: 100%; padding: 12px; color: var(--color-text); text-decoration: none; border-radius: var(--radius-base); cursor: pointer; margin-bottom: 8px; font-size: 14px; text-align: left; }
         .nav-link:hover { background: rgba(15, 28, 63, 0.1); } 
         .nav-link.active { background: var(--color-primary); color: white; }
@@ -48,34 +51,51 @@
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
         .form-control { width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px; }
-        .anexos-list { font-size: 12px; color: #666; margin-top: 5px; }
         
         .legal-box { background: #f9f9f9; padding: 15px; border-radius: 8px; font-size: 13px; line-height: 1.6; color: #444; height: 250px; overflow-y: auto; border: 1px solid #ddd; margin-top: 10px; }
         .legal-title { font-size: 16px; color: var(--color-primary); font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
-        <img src="uniara-logo.png" alt="Logo Uniara Oficial" class="sidebar-logo">
-        <p style="font-size: 24px; margin-bottom: 25px; text-align: center; color: #666;">Gestão de Ligas Acadêmicas</p>
-        <nav style="width: 100%; flex: 1;">
-            <div class="nav-link" onclick="renderPage('dashboard')">📊 Dashboard</div>
-            <div class="nav-link" onclick="renderPage('ligas')">🏥 Ligas</div>
-            <div class="nav-link" onclick="renderPage('pesquisas')">🔬 Pesquisas</div>
-            <div class="nav-link" onclick="renderPage('eventos')">📅 Eventos</div>
-            <div class="nav-link" onclick="renderPage('extensao')">🎯 Extensão</div>
-            <div class="nav-link" onclick="renderPage('atividades')">📝 Atividades</div>
-            <div class="nav-link" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;" onclick="renderPage('sobre')">⚖️ Sobre & Legal</div>
-        </nav>
-        <div style="text-align: center; width: 100%; margin-top: auto;">
-            <p style="font-size: 10px; color: #999; margin-bottom: 8px;">Desenvolvido por:</p>
-            <img src="gbx-logo.png" alt="GBX Learning Tools" style="width: 90px; height: auto; opacity: 0.9; object-fit: contain;">
-            <p style="font-size: 10px; color: #999; margin-top: 8px;">Uso restrito UNIARA</p>
+
+    <div id="loginScreen">
+        <div class="login-card">
+            <img src="uniara-logo.png" alt="Logo Uniara">
+            <h3 style="margin-bottom: 20px; color: var(--color-primary);">Acesso ao Sistema</h3>
+            <form onsubmit="event.preventDefault(); fazerLogin();">
+                <input type="email" id="emailInput" placeholder="E-mail" required>
+                <input type="password" id="senhaInput" placeholder="Senha" required>
+                <button type="submit" id="btnLogin">Entrar</button>
+                <p id="loginError" style="color: red; font-size: 12px; margin-top: 10px; display: none;">Credenciais inválidas.</p>
+            </form>
         </div>
-    </aside>
-    <main class="main-content">
-        <div id="pageContent"></div>
-    </main>
+    </div>
+
+    <div id="appContainer" style="display: none;">
+        <aside class="sidebar">
+            <img src="uniara-logo.png" alt="Logo Uniara Oficial" class="sidebar-logo">
+            <p style="font-size: 11px; margin-bottom: 25px; text-align: center; color: #666;">Gestão de Ligas Acadêmicas</p>
+            <nav style="width: 100%; flex: 1;">
+                <div class="nav-link" onclick="renderPage('dashboard')">📊 Dashboard</div>
+                <div class="nav-link" onclick="renderPage('ligas')">🏥 Ligas</div>
+                <div class="nav-link" onclick="renderPage('pesquisas')">🔬 Pesquisas</div>
+                <div class="nav-link" onclick="renderPage('eventos')">📅 Eventos</div>
+                <div class="nav-link" onclick="renderPage('extensao')">🎯 Extensão</div>
+                <div class="nav-link" onclick="renderPage('atividades')">📝 Atividades</div>
+                <div class="nav-link" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;" onclick="renderPage('sobre')">⚖️ Sobre & Legal</div>
+                <div class="nav-link" style="color: #c0152f; font-weight: bold; margin-top: 10px;" onclick="fazerLogout()">🚪 Sair do Sistema</div>
+            </nav>
+            <div style="text-align: center; width: 100%; margin-top: auto;">
+                <p style="font-size: 10px; color: #999; margin-bottom: 8px;">Desenvolvido por:</p>
+                <img src="gbx-logo.png" alt="GBX Learning Tools" style="width: 90px; height: auto; opacity: 0.9; object-fit: contain;">
+                <p style="font-size: 10px; color: #999; margin-top: 8px;">Uso restrito UNIARA</p>
+            </div>
+        </aside>
+        <main class="main-content">
+            <div id="pageContent"></div>
+        </main>
+    </div>
+
     <div id="modalContainer"></div>
     <script type="module" src="app.js"></script>
 </body>
