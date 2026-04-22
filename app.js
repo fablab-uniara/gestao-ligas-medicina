@@ -2,8 +2,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-// 🔄 MUDANÇA: signInWithRedirect importado no lugar do Popup
-import { getAuth, signInWithRedirect, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+// 🔄 MUDANÇA: Adicionamos o getRedirectResult para "pescar" o usuário na volta
+import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHs0DW6ppjwHcYSFSpXWfczIGt2IYaE18",
@@ -21,7 +21,7 @@ const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
-// ⚠️ LISTA DE COORDENADORES (Bypass automático na aprovação)
+// ⚠️ LISTA DE COORDENADORES
 const EMAILS_ADMIN = [
       "gbraz@uniara.edu.br"
 ]; 
@@ -39,18 +39,22 @@ function mostrarErro(mensagem, isSuccess = false) {
     msgBox.style.border = `1px solid ${isSuccess ? '#c8e6c9' : '#ffcdd2'}`;
 }
 
-// 🔄 MUDANÇA: Função simplificada usando Redirecionamento
 function loginComGoogle() {
     const btn = document.getElementById('btnGoogleLogin');
     document.getElementById('loginError').style.display = 'none';
     btn.innerHTML = "Redirecionando..."; 
     btn.disabled = true;
-    
-    // O usuário é levado para o Google e volta depois.
     signInWithRedirect(auth, googleProvider);
 }
 
-// Ouve as mudanças de estado do usuário (inclusive quando volta do Google)
+// 🔄 NOVO: Força o navegador a processar o resultado do retorno do Google
+getRedirectResult(auth).then((result) => {
+    if (result) console.log("Google Auth Finalizado:", result.user.email);
+}).catch((error) => {
+    console.error("Erro no redirecionamento:", error);
+    mostrarErro("Erro ao autenticar. Tente limpar os cookies ou usar janela anônima.");
+});
+
 onAuthStateChanged(auth, async (user) => {
     const btn = document.getElementById('btnGoogleLogin');
     if (btn) {
@@ -60,47 +64,55 @@ onAuthStateChanged(auth, async (user) => {
 
     if (user) {
         const email = user.email.toLowerCase();
+        console.log("Usuário detectado pelo sistema:", email); // Log de debug
 
-        // 🔄 MUDANÇA: REGRA 1 (Checagem de Domínio) foi movida para cá
         if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
             await signOut(auth);
             mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
             return;
         }
 
-        const userRef = doc(dbFirestore, "usuarios", user.uid);
-        const userDoc = await getDoc(userRef);
+        // 🔄 NOVO: Rede de proteção para erros de permissão do banco
+        try {
+            const userRef = doc(dbFirestore, "usuarios", user.uid);
+            const userDoc = await getDoc(userRef);
 
-        // REGRA 2: Se for Coordenador, entra direto
-        if (EMAILS_ADMIN.includes(email)) {
-            await setDoc(userRef, { email: email, nome: user.displayName || 'Coordenador', status: 'aprovado', role: 'admin' }, { merge: true });
-            liberarAcesso(true);
-            return;
-        }
-
-        // REGRA 3: Se for aluno comum, verifica o status
-        if (userDoc.exists()) {
-            const data = userDoc.data();
-            if (data.status === 'aprovado') {
-                liberarAcesso(false);
-            } else if (data.status === 'pendente') {
-                await signOut(auth);
-                mostrarErro("⏳ Sua conta está em análise. Aguarde a aprovação da coordenação para acessar.");
-            } else {
-                await signOut(auth);
-                mostrarErro("🚫 O acesso para este e-mail foi bloqueado.");
+            // REGRA 2: Coordenador entra direto
+            if (EMAILS_ADMIN.includes(email)) {
+                await setDoc(userRef, { email: email, nome: user.displayName || 'Coordenador', status: 'aprovado', role: 'admin' }, { merge: true });
+                liberarAcesso(true);
+                return;
             }
-        } else {
-            // REGRA 4: Primeiro acesso do aluno
-            await setDoc(userRef, {
-                email: email,
-                nome: user.displayName || 'Aluno',
-                status: 'pendente',
-                dataSolicitacao: new Date().toLocaleDateString('pt-BR')
-            });
+
+            // REGRA 3: Aluno Comum
+            if (userDoc.exists()) {
+                const data = userDoc.data();
+                if (data.status === 'aprovado') {
+                    liberarAcesso(false);
+                } else if (data.status === 'pendente') {
+                    await signOut(auth);
+                    mostrarErro("⏳ Sua conta está em análise. Aguarde a aprovação da coordenação para acessar.");
+                } else {
+                    await signOut(auth);
+                    mostrarErro("🚫 O acesso para este e-mail foi bloqueado.");
+                }
+            } else {
+                // REGRA 4: Primeiro acesso
+                await setDoc(userRef, {
+                    email: email,
+                    nome: user.displayName || 'Aluno',
+                    status: 'pendente',
+                    dataSolicitacao: new Date().toLocaleDateString('pt-BR')
+                });
+                await signOut(auth);
+                mostrarErro("✅ Cadastro solicitado com sucesso! A coordenação irá avaliar e liberar o seu acesso.", true);
+            }
+        } catch (dbError) {
+            console.error("Erro crítico no Firestore:", dbError);
             await signOut(auth);
-            mostrarErro("✅ Cadastro solicitado com sucesso! A coordenação irá avaliar e liberar o seu acesso.", true);
+            mostrarErro("Erro de acesso: Seu banco de dados Firestore está bloqueando a leitura (verifique as Regras de Segurança no painel do Firebase).");
         }
+
     } else {
         document.getElementById('loginScreen').style.display = 'flex';
         document.getElementById('appContainer').style.display = 'none';
