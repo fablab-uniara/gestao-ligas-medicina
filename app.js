@@ -4,15 +4,16 @@ import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/fireb
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-// SUAS CREDENCIAIS REAIS (Conforme imagem enviada)
+// SUAS CREDENCIAIS NOVAS E REAIS
 const firebaseConfig = {
-  apiKey: "AIzaSyDHs0DW6ppjwHcYsfSpXWfczIGt2IYaE18",
+  apiKey: "AIzaSyDHs0DW6ppjwHcYSFSpXWfczIGt2IYaE18",
   authDomain: "uniara-medicina-ligas.firebaseapp.com",
   projectId: "uniara-medicina-ligas",
   storageBucket: "uniara-medicina-ligas.firebasestorage.app",
   messagingSenderId: "556596933742",
-  appId: "1:556596933742:web:b8f4783ae9fb7bd375a27f"
+  appId: "1:556596933742:web:c7162dab0667064875a27f"
 };
+
 const app = initializeApp(firebaseConfig);
 const dbFirestore = getFirestore(app);
 const storage = getStorage(app);
