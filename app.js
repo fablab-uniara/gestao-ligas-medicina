@@ -2,7 +2,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+// 🔄 MUDANÇA: signInWithRedirect importado no lugar do Popup
+import { getAuth, signInWithRedirect, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHs0DW6ppjwHcYSFSpXWfczIGt2IYaE18",
@@ -38,32 +39,18 @@ function mostrarErro(mensagem, isSuccess = false) {
     msgBox.style.border = `1px solid ${isSuccess ? '#c8e6c9' : '#ffcdd2'}`;
 }
 
-async function loginComGoogle() {
+// 🔄 MUDANÇA: Função simplificada usando Redirecionamento
+function loginComGoogle() {
     const btn = document.getElementById('btnGoogleLogin');
     document.getElementById('loginError').style.display = 'none';
-    btn.innerHTML = "Carregando..."; btn.disabled = true;
-
-    try {
-        const result = await signInWithPopup(auth, googleProvider);
-        const email = result.user.email.toLowerCase();
-
-        // REGRA 1: Checa se é da Uniara (ou se é Admin)
-        if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
-            await signOut(auth);
-            mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
-            btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
-            btn.disabled = false;
-            return;
-        }
-    } catch (error) {
-        console.error(error);
-        mostrarErro("Erro na comunicação com o Google. Tente novamente.");
-        btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
-        btn.disabled = false;
-    }
+    btn.innerHTML = "Redirecionando..."; 
+    btn.disabled = true;
+    
+    // O usuário é levado para o Google e volta depois.
+    signInWithRedirect(auth, googleProvider);
 }
 
-// Ouve as mudanças de estado do usuário
+// Ouve as mudanças de estado do usuário (inclusive quando volta do Google)
 onAuthStateChanged(auth, async (user) => {
     const btn = document.getElementById('btnGoogleLogin');
     if (btn) {
@@ -73,6 +60,14 @@ onAuthStateChanged(auth, async (user) => {
 
     if (user) {
         const email = user.email.toLowerCase();
+
+        // 🔄 MUDANÇA: REGRA 1 (Checagem de Domínio) foi movida para cá
+        if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
+            await signOut(auth);
+            mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
+            return;
+        }
+
         const userRef = doc(dbFirestore, "usuarios", user.uid);
         const userDoc = await getDoc(userRef);
 
