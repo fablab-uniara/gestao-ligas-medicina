@@ -2,7 +2,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-// Importações modificadas para incluir o provedor do Google
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
@@ -18,12 +17,12 @@ const app = initializeApp(firebaseConfig);
 const dbFirestore = getFirestore(app);
 const storage = getStorage(app);
 const auth = getAuth(app);
-const googleProvider = new GoogleAuthProvider(); // Configura o Google
+const googleProvider = new GoogleAuthProvider();
 const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
 // ⚠️ LISTA DE COORDENADORES (Bypass automático na aprovação)
 const EMAILS_ADMIN = [
-    "admin@uniara.edu.br"
+    "admin@uniara.edu.br" // Pode adicionar mais e-mails institucionais aqui
 ]; 
 
 // --- 2. BANCO DE DADOS BASE ---
@@ -56,7 +55,6 @@ async function loginComGoogle() {
             btn.disabled = false;
             return;
         }
-        // Se passar, a função onAuthStateChanged vai tomar conta do roteamento
     } catch (error) {
         console.error(error);
         mostrarErro("Erro na comunicação com o Google. Tente novamente.");
@@ -78,7 +76,7 @@ onAuthStateChanged(auth, async (user) => {
         const userRef = doc(dbFirestore, "usuarios", user.uid);
         const userDoc = await getDoc(userRef);
 
-        // REGRA 2: Se for Coordenador, entra direto e ganha a coroa
+        // REGRA 2: Se for Coordenador, entra direto
         if (EMAILS_ADMIN.includes(email)) {
             await setDoc(userRef, { email: email, nome: user.displayName || 'Coordenador', status: 'aprovado', role: 'admin' }, { merge: true });
             liberarAcesso(true);
@@ -98,7 +96,7 @@ onAuthStateChanged(auth, async (user) => {
                 mostrarErro("🚫 O acesso para este e-mail foi bloqueado.");
             }
         } else {
-            // REGRA 4: É o primeiro acesso do aluno! Cria a conta como PENDENTE e avisa.
+            // REGRA 4: Primeiro acesso do aluno
             await setDoc(userRef, {
                 email: email,
                 nome: user.displayName || 'Aluno',
@@ -266,4 +264,24 @@ async function saveRelatorio(type, itemId) {
 
 async function deleteItem(type, id) { if(!confirm('Deseja excluir na nuvem este registro e seus relatórios?')) return; db[type] = db[type].filter(i => i.id !== id); if (type === 'pesquisas') db.relatoriosPesquisa = db.relatoriosPesquisa.filter(r => r.itemId !== id); if (type === 'eventos') db.relatoriosEvento = db.relatoriosEvento.filter(r => r.itemId !== id); if (type === 'extensao') db.relatoriosExtensao = db.relatoriosExtensao.filter(r => r.itemId !== id); await saveDb(); renderPage(currentPage); }
 
-window.renderPage = renderPage; window.openLigaModal = openLigaModal; window.openPesquisaModal = openPesquisaModal; window.openEventoModal = openEventoModal; window.openExtensaoModal = openExtensaoModal; window.openAtividadeModal = openAtividadeModal; window.openRelatorioModal = openRelatorioModal; window.closeActiveModal = closeActiveModal; window.deleteItem = deleteItem; window.gerarPDF = gerarPDF; window.updateFileList = updateFileList; window.saveLiga = saveLiga; window.savePesquisa = savePesquisa; window.saveEvento = saveEvento; window.saveExtensao = saveExtensao; window.saveAtividade = saveAtividade; window.saveRelatorio = saveRelatorio; window.loginComGoogle = loginComGoogle; window.fazerLogout = fazerLogout; window.mudarStatusUsuario = mudarStatusUsuario;
+// --- EXPOSIÇÃO GLOBAL ---
+window.renderPage = renderPage;
+window.openLigaModal = openLigaModal;
+window.openPesquisaModal = openPesquisaModal;
+window.openEventoModal = openEventoModal;
+window.openExtensaoModal = openExtensaoModal;
+window.openAtividadeModal = openAtividadeModal;
+window.openRelatorioModal = openRelatorioModal;
+window.closeActiveModal = closeActiveModal;
+window.deleteItem = deleteItem;
+window.gerarPDF = gerarPDF;
+window.updateFileList = updateFileList;
+window.saveLiga = saveLiga;
+window.savePesquisa = savePesquisa;
+window.saveEvento = saveEvento;
+window.saveExtensao = saveExtensao;
+window.saveAtividade = saveAtividade;
+window.saveRelatorio = saveRelatorio;
+window.loginComGoogle = loginComGoogle;
+window.fazerLogout = fazerLogout;
+window.mudarStatusUsuario = mudarStatusUsuario;
