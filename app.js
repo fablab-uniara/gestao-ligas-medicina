@@ -23,7 +23,10 @@ const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
 // ⚠️ LISTA DE COORDENADORES
 const EMAILS_ADMIN = [
-      "gbraz@uniara.edu.br"
+      "gbraz@uniara.edu.br",
+  "vferreira@uniara.edu.br",
+  "rmprado@uniara.edu.br",
+  "eclima@uniara.edu.br"
 ]; 
 
 // --- 2. BANCO DE DADOS BASE ---
