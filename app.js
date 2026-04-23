@@ -20,9 +20,12 @@ const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
-// ⚠️ LISTA DE COORDENADORES (Acesso global a todas as ligas)
+// ⚠️ LISTA DE COORDENADORES ATUALIZADA
 const EMAILS_ADMIN = [
-      "gbraz@uniara.edu.br"
+    "gbraz@uniara.edu.br",
+    "rmprado@uniara.edu.br",
+    "eclima@uniara.edu.br",
+    "vferreira@uniara.edu.br"
 ]; 
 
 // VARIÁVEIS GLOBAIS
@@ -354,7 +357,7 @@ function iniciarTour() {
             steps: [
                 {
                     title: "👋 Bem-vindo(a)!",
-                    intro: "Este é o seu novo sistema de Gestão de Ligas Acadêmicas. Vamos fazer um tour rápido de 1 minuto para você aprender a usar."
+                    intro: "Este é o seu novo sistema de Gestão de Ligas Acadêmicas. Vamos fazer um tour rápido para você aprender a usar."
                 },
                 {
                     element: document.querySelector('.sidebar'),
@@ -394,7 +397,7 @@ function iniciarTour() {
     }, 300);
 }
 
-// --- EXPOSIÇÃO GLOBAL ---
+// --- EXPOSIÇÃO GLOBAL (AGORA COM ABSOLUTA CERTEZA!) ---
 window.renderPage = renderPage;
 window.openLigaModal = openLigaModal;
 window.openPesquisaModal = openPesquisaModal;
