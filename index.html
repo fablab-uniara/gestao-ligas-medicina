@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Ligas Acadêmicas - Medicina UNIARA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
     <style>
         :root {
             --color-background: #fcfcf9;
@@ -21,7 +23,6 @@
         #loginScreen { display: flex; height: 100vh; width: 100vw; align-items: center; justify-content: center; background: var(--color-primary); }
         .login-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
         .login-card img.logo { width: 120px; margin-bottom: 20px; }
-        
         .btn-google { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 12px; background: white; color: #444; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .btn-google:hover { background: #f8f9fa; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .btn-google img { width: 20px; height: 20px; margin: 0; }
@@ -30,30 +31,43 @@
         #appContainer { display: none; display: flex; width: 100%; }
         .sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); height: 100vh; padding: 24px; position: fixed; display: flex; flex-direction: column; align-items: center; }
         .sidebar-logo { width: 100px; height: 100px; object-fit: contain; margin-bottom: 20px; }
-        .nav-link { display: block; width: 100%; padding: 12px; color: var(--color-text); text-decoration: none; border-radius: var(--radius-base); cursor: pointer; margin-bottom: 8px; font-size: 14px; text-align: left; }
-        .nav-link:hover { background: rgba(15, 28, 63, 0.1); } 
+        
+        .nav-link { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; color: var(--color-text); text-decoration: none; border-radius: var(--radius-base); cursor: pointer; margin-bottom: 8px; font-size: 14px; font-weight: 500; transition: 0.2s; }
+        .nav-link .material-icons-round { font-size: 20px; color: #5e6b73; transition: 0.2s; }
+        .nav-link:hover { background: rgba(15, 28, 63, 0.05); } 
         .nav-link.active { background: var(--color-primary); color: white; }
+        .nav-link.active .material-icons-round { color: white; }
         
         .main-content { margin-left: 260px; flex: 1; padding: 40px; min-height: 100vh; }
         .card { background: white; padding: 24px; border-radius: 12px; border: 1px solid var(--color-border); box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 20px; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--color-border); font-size: 14px; }
-        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 13px; }
-        .btn-primary { background: var(--color-primary); color: white; }
-        .btn-danger { background: #c0152f; color: white; }
-        .btn-secondary { background: #ddd; color: #333; }
-        .btn-success { background: #2e7d32; color: white; }
+        th, td { text-align: left; padding: 14px 12px; border-bottom: 1px solid var(--color-border); font-size: 13px; }
+        th { font-weight: 600; color: #5e6b73; background-color: #f9fbfb; }
         
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn .material-icons-round { font-size: 16px; }
+        .btn-primary { background: var(--color-primary); color: white; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-danger { background: #fff0f0; color: #c0152f; border: 1px solid #ffcdd2; }
+        .btn-danger:hover { background: #ffebee; }
+        .btn-secondary { background: #f1f3f4; color: #333; border: 1px solid #ddd; }
+        .btn-success { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .btn-warning { background: #fff8e1; color: #e65100; border: 1px solid #ffecb3; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
         .modal.active { display: flex; }
-        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 850px; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 850px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
         .form-group { margin-bottom: 15px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; }
-        .form-control { width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px; }
-        .legal-box { background: #f9f9f9; padding: 15px; border-radius: 8px; font-size: 13px; line-height: 1.6; color: #444; height: 250px; overflow-y: auto; border: 1px solid #ddd; margin-top: 10px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #444; }
+        .form-control { width: 100%; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 6px; font-size: 14px; transition: 0.2s; }
+        .form-control:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px rgba(15, 28, 63, 0.1); }
+        
+        .legal-box { background: #f9fbfb; padding: 15px; border-radius: 8px; font-size: 13px; line-height: 1.6; color: #555; height: 250px; overflow-y: auto; border: 1px solid #eee; margin-top: 10px; }
         .legal-title { font-size: 16px; color: var(--color-primary); font-weight: bold; margin-bottom: 10px; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #eef2f5; color: #5e6b73; }
     </style>
 </head>
 <body>
@@ -68,7 +82,6 @@
                 <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google">
                 Entrar com Google
             </button>
-            
             <p id="loginError" style="font-size: 13px; margin-top: 20px; display: none; font-weight:bold; padding: 10px; border-radius: 6px;"></p>
         </div>
     </div>
@@ -76,24 +89,25 @@
     <div id="appContainer" style="display: none;">
         <aside class="sidebar">
             <img src="uniara-logo.png" alt="Logo Uniara Oficial" class="sidebar-logo">
-            <p style="font-size: 11px; margin-bottom: 25px; text-align: center; color: #666;">Gestão de Ligas Acadêmicas</p>
+            <p style="font-size: 11px; margin-bottom: 25px; text-align: center; color: #666; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Gestão de Ligas</p>
             <nav style="width: 100%; flex: 1;">
-                <div class="nav-link" onclick="renderPage('dashboard')">📊 Dashboard</div>
-                <div class="nav-link" onclick="renderPage('ligas')">🏥 Ligas</div>
-                <div class="nav-link" onclick="renderPage('pesquisas')">🔬 Pesquisas</div>
-                <div class="nav-link" onclick="renderPage('eventos')">📅 Eventos</div>
-                <div class="nav-link" onclick="renderPage('extensao')">🎯 Extensão</div>
-                <div class="nav-link" onclick="renderPage('atividades')">📝 Atividades</div>
+                <div class="nav-link" onclick="renderPage('dashboard')"><span class="material-icons-round">dashboard</span> Dashboard</div>
+                <div class="nav-link" onclick="renderPage('ligas')"><span class="material-icons-round">local_hospital</span> Ligas</div>
+                <div class="nav-link" onclick="renderPage('pesquisas')"><span class="material-icons-round">science</span> Pesquisas</div>
+                <div class="nav-link" onclick="renderPage('eventos')"><span class="material-icons-round">event</span> Eventos</div>
+                <div class="nav-link" onclick="renderPage('extensao')"><span class="material-icons-round">diversity_3</span> Extensão</div>
+                <div class="nav-link" onclick="renderPage('atividades')"><span class="material-icons-round">assignment</span> Atividades</div>
                 
-                <div id="menuAdmin" class="nav-link" style="display:none; background-color: #e0f2f1; color: #00695c; font-weight: bold; margin-top: 15px;" onclick="renderPage('admin')">👑 Gestão de Acessos</div>
+                <div id="menuAdmin" class="nav-link" style="display:none; background-color: #f1f8ff; color: #0277bd; margin-top: 20px; border: 1px solid #b3e5fc;" onclick="renderPage('admin')">
+                    <span class="material-icons-round" style="color: #0277bd;">admin_panel_settings</span> Gestão de Acessos
+                </div>
                 
-                <div class="nav-link" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 20px;" onclick="renderPage('sobre')">⚖️ Sobre & Legal</div>
-                <div class="nav-link" style="color: #c0152f; font-weight: bold; margin-top: 5px;" onclick="fazerLogout()">🚪 Sair do Sistema</div>
+                <div class="nav-link" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 20px;" onclick="renderPage('sobre')"><span class="material-icons-round">gavel</span> Sobre & Legal</div>
+                <div class="nav-link" style="color: #c0152f; margin-top: 5px;" onclick="fazerLogout()"><span class="material-icons-round" style="color: #c0152f;">logout</span> Sair do Sistema</div>
             </nav>
             <div style="text-align: center; width: 100%; margin-top: auto;">
                 <p style="font-size: 10px; color: #999; margin-bottom: 8px;">Desenvolvido por:</p>
                 <img src="gbx-logo.png" alt="GBX Learning Tools" style="width: 90px; height: auto; opacity: 0.9; object-fit: contain;">
-                <p style="font-size: 10px; color: #999; margin-top: 8px;">Uso restrito UNIARA</p>
             </div>
         </aside>
         <main class="main-content">
