@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Ligas Acadêmicas - Medicina UNIARA</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     
     <style>
@@ -19,7 +23,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--color-background); color: var(--color-text); }
         
-        /* --- TELA DE LOGIN COM GOOGLE --- */
         #loginScreen { display: flex; height: 100vh; width: 100vw; align-items: center; justify-content: center; background: var(--color-primary); }
         .login-card { background: white; padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
         .login-card img.logo { width: 120px; margin-bottom: 20px; }
@@ -27,7 +30,6 @@
         .btn-google:hover { background: #f8f9fa; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .btn-google img { width: 20px; height: 20px; margin: 0; }
         
-        /* --- APLICATIVO PRINCIPAL --- */
         #appContainer { display: none; display: flex; width: 100%; }
         .sidebar { width: 260px; background: var(--color-surface); border-right: 1px solid var(--color-border); height: 100vh; padding: 24px; position: fixed; display: flex; flex-direction: column; align-items: center; }
         .sidebar-logo { width: 100px; height: 100px; object-fit: contain; margin-bottom: 20px; }
