@@ -22,7 +22,10 @@ const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
 // ⚠️ LISTA DE COORDENADORES (Acesso global a todas as ligas)
 const EMAILS_ADMIN = [
-      "gbraz@uniara.edu.br"
+      "gbraz@uniara.edu.br",
+  "rmprado@uniara.edu.br",
+  "vferreira@uniara.edu.br",
+  "eclima@uniara.edu.br"
 ]; 
 
 // VARIÁVEIS GLOBAIS
