@@ -2,7 +2,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+// 🔄 CORREÇÃO: Usando signInWithPopup (O único que funciona bem no GitHub Pages)
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHs0DW6ppjwHcYSFSpXWfczIGt2IYaE18",
@@ -44,20 +45,30 @@ function mostrarErro(mensagem, isSuccess = false) {
     msgBox.style.border = `1px solid ${isSuccess ? '#c8e6c9' : '#ffcdd2'}`;
 }
 
-function loginComGoogle() {
+async function loginComGoogle() {
     const btn = document.getElementById('btnGoogleLogin');
     document.getElementById('loginError').style.display = 'none';
-    btn.innerHTML = "Redirecionando..."; 
+    btn.innerHTML = "Abrindo pop-up do Google..."; 
     btn.disabled = true;
-    signInWithRedirect(auth, googleProvider);
-}
 
-getRedirectResult(auth).then((result) => {
-    if (result) console.log("Google Auth Finalizado:", result.user.email);
-}).catch((error) => {
-    console.error("Erro no redirecionamento:", error);
-    mostrarErro("Erro ao autenticar. Tente limpar os cookies ou usar janela anônima.");
-});
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const email = result.user.email.toLowerCase();
+
+        if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
+            await signOut(auth);
+            mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
+            btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
+            btn.disabled = false;
+            return;
+        }
+    } catch (error) {
+        console.error("Erro no Popup:", error);
+        mostrarErro("A janela de login foi fechada. Permita pop-ups no seu navegador.");
+        btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
+        btn.disabled = false;
+    }
+}
 
 onAuthStateChanged(auth, async (user) => {
     const btn = document.getElementById('btnGoogleLogin');
@@ -66,16 +77,11 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         const email = user.email.toLowerCase();
         
-        if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
-            await signOut(auth);
-            mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
-            return;
-        }
-        
         try {
             const userRef = doc(dbFirestore, "usuarios", user.uid);
             const userDoc = await getDoc(userRef);
 
+            // REGRA 2: Coordenadores entram direto
             if (EMAILS_ADMIN.includes(email)) {
                 await setDoc(userRef, { email: email, nome: user.displayName || 'Coordenador', status: 'aprovado', role: 'admin' }, { merge: true });
                 currentUser = { email: email, nome: user.displayName, role: 'admin' };
@@ -83,6 +89,7 @@ onAuthStateChanged(auth, async (user) => {
                 return;
             }
 
+            // REGRA 3: Aluno Comum
             if (userDoc.exists()) {
                 const data = userDoc.data();
                 if (data.status === 'aprovado') {
@@ -94,13 +101,14 @@ onAuthStateChanged(auth, async (user) => {
                     await signOut(auth); mostrarErro("🚫 O acesso para este e-mail foi bloqueado.");
                 }
             } else {
+                // REGRA 4: Primeiro acesso
                 await setDoc(userRef, { email: email, nome: user.displayName || 'Aluno', status: 'pendente', dataSolicitacao: new Date().toLocaleDateString('pt-BR') });
                 await signOut(auth);
                 mostrarErro("✅ Cadastro solicitado com sucesso! A coordenação irá liberar seu acesso.", true);
             }
         } catch (dbError) {
             console.error("Erro no BD:", dbError);
-            await signOut(auth); mostrarErro("Erro interno ao validar acessos.");
+            await signOut(auth); mostrarErro("Erro interno: Falha ao ler permissões no banco de dados.");
         }
     } else {
         currentUser = null;
@@ -397,7 +405,7 @@ function iniciarTour() {
     }, 300);
 }
 
-// --- EXPOSIÇÃO GLOBAL (AGORA COM ABSOLUTA CERTEZA!) ---
+// --- EXPOSIÇÃO GLOBAL ---
 window.renderPage = renderPage;
 window.openLigaModal = openLigaModal;
 window.openPesquisaModal = openPesquisaModal;
