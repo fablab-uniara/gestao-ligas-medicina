@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDHs0DW6ppjwHcYSFSpXWfczIGt2IYaE18",
@@ -22,17 +22,14 @@ const uniaraRef = doc(dbFirestore, "plataforma", "dados_medicina");
 
 // ⚠️ LISTA DE COORDENADORES (Acesso global a todas as ligas)
 const EMAILS_ADMIN = [
-      "gbraz@uniara.edu.br",
-  "rmprado@uniara.edu.br",
-  "vferreira@uniara.edu.br",
-  "eclima@uniara.edu.br"
+      "gbraz@uniara.edu.br"
 ]; 
 
 // VARIÁVEIS GLOBAIS
 let db = { ligas: [], pesquisas: [], eventos: [], extensao: [], atividades: [], relatoriosPesquisa: [], relatoriosEvento: [], relatoriosExtensao: [] };
 let currentUser = null; 
 let currentPage = 'dashboard';
-let graficosAtivos = []; // 📊 NOVO: Guarda os gráficos da tela para destruí-los ao mudar de aba
+let graficosAtivos = [];
 
 // --- 2. GESTÃO DE AUTENTICAÇÃO ---
 function mostrarErro(mensagem, isSuccess = false) {
@@ -44,28 +41,20 @@ function mostrarErro(mensagem, isSuccess = false) {
     msgBox.style.border = `1px solid ${isSuccess ? '#c8e6c9' : '#ffcdd2'}`;
 }
 
-async function loginComGoogle() {
+function loginComGoogle() {
     const btn = document.getElementById('btnGoogleLogin');
     document.getElementById('loginError').style.display = 'none';
-    btn.innerHTML = "Abrindo permissões..."; btn.disabled = true;
-
-    try {
-        const result = await signInWithPopup(auth, googleProvider);
-        const email = result.user.email.toLowerCase();
-
-        if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
-            await signOut(auth);
-            mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
-            btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
-            btn.disabled = false;
-            return;
-        }
-    } catch (error) {
-        mostrarErro("A janela foi fechada. Permita pop-ups no seu navegador.");
-        btn.innerHTML = '<img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google"> Entrar com Google';
-        btn.disabled = false;
-    }
+    btn.innerHTML = "Redirecionando..."; 
+    btn.disabled = true;
+    signInWithRedirect(auth, googleProvider);
 }
+
+getRedirectResult(auth).then((result) => {
+    if (result) console.log("Google Auth Finalizado:", result.user.email);
+}).catch((error) => {
+    console.error("Erro no redirecionamento:", error);
+    mostrarErro("Erro ao autenticar. Tente limpar os cookies ou usar janela anônima.");
+});
 
 onAuthStateChanged(auth, async (user) => {
     const btn = document.getElementById('btnGoogleLogin');
@@ -73,6 +62,12 @@ onAuthStateChanged(auth, async (user) => {
 
     if (user) {
         const email = user.email.toLowerCase();
+        
+        if (!email.endsWith("@uniara.edu.br") && !EMAILS_ADMIN.includes(email)) {
+            await signOut(auth);
+            mostrarErro("⚠️ Utilize seu e-mail institucional (@uniara.edu.br).");
+            return;
+        }
         
         try {
             const userRef = doc(dbFirestore, "usuarios", user.uid);
@@ -102,7 +97,7 @@ onAuthStateChanged(auth, async (user) => {
             }
         } catch (dbError) {
             console.error("Erro no BD:", dbError);
-            await signOut(auth); mostrarErro("Erro ao ler permissões no banco de dados.");
+            await signOut(auth); mostrarErro("Erro interno ao validar acessos.");
         }
     } else {
         currentUser = null;
@@ -144,7 +139,7 @@ function getDadosPermitidos(type) {
     return (db[type] || []).filter(item => item.autorEmail === currentUser.email);
 }
 
-// --- 4. RENDERIZAÇÃO DA TELA (INCLUINDO GRÁFICOS) ---
+// --- 4. RENDERIZAÇÃO DA TELA ---
 async function renderPage(page) {
     currentPage = page;
     const content = document.getElementById('pageContent');
@@ -164,7 +159,6 @@ async function renderPage(page) {
     switch(page) {
         case 'dashboard':
             const msgAcesso = isAdm ? 'Visão Global (Coordenador)' : `Sua Visão (${currentUser?.nome})`;
-            // 📊 NOVO: Layout do Dashboard adaptado para exibir os Gráficos
             content.innerHTML = `
                 <div class="page-header" style="margin-bottom: 30px;">
                     <h2>Gestão de Ligas Acadêmicas</h2>
@@ -186,8 +180,6 @@ async function renderPage(page) {
                         <div style="height: 250px;"><canvas id="chartEventos"></canvas></div>
                     </div>
                 </div>`;
-            
-            // Chama a função de gráficos com um pequeno atraso para dar tempo do HTML aparecer na tela
             setTimeout(renderizarGraficos, 100);
             break;
             
@@ -209,9 +201,8 @@ async function renderPage(page) {
     }
 }
 
-// 📊 LÓGICA DE GERAÇÃO DOS GRÁFICOS (CHART.JS)
+// 📊 GRÁFICOS
 function renderizarGraficos() {
-    // Destroi gráficos antigos para evitar bugs de sobreposição
     graficosAtivos.forEach(chart => chart.destroy());
     graficosAtivos = [];
 
@@ -219,7 +210,6 @@ function renderizarGraficos() {
     const ctxEvt = document.getElementById('chartEventos');
     if (!ctxProd || !ctxEvt) return;
 
-    // Dados do Gráfico 1: Barras
     const chart1 = new Chart(ctxProd, {
         type: 'bar',
         data: {
@@ -236,14 +226,9 @@ function renderizarGraficos() {
                 borderRadius: 4
             }]
         },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
     });
 
-    // Dados do Gráfico 2: Rosca (Tipos de Eventos)
     const eventosData = getDadosPermitidos('eventos');
     const tipos = { 'Simpósio': 0, 'Minicurso': 0, 'Workshop': 0 };
     eventosData.forEach(e => { if(tipos[e.tipo] !== undefined) tipos[e.tipo]++; });
@@ -252,16 +237,9 @@ function renderizarGraficos() {
         type: 'doughnut',
         data: {
             labels: Object.keys(tipos),
-            datasets: [{
-                data: Object.values(tipos),
-                backgroundColor: ['#1976d2', '#388e3c', '#fbc02d'],
-                borderWidth: 2, borderColor: '#fff'
-            }]
+            datasets: [{ data: Object.values(tipos), backgroundColor: ['#1976d2', '#388e3c', '#fbc02d'], borderWidth: 2, borderColor: '#fff' }]
         },
-        options: {
-            responsive: true, maintainAspectRatio: false, cutout: '65%',
-            plugins: { legend: { position: 'right' } }
-        }
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right' } } }
     });
 
     graficosAtivos.push(chart1, chart2);
@@ -269,7 +247,6 @@ function renderizarGraficos() {
 
 function renderTable(title, type, data, headers, modalNovoFn) {
     const hasReport = ['pesquisas', 'eventos', 'extensao'].includes(type);
-    
     let html = `<div class="card"><div class="card-header"><h2>${title}</h2><button class="btn btn-primary" onclick="${modalNovoFn}"><span class="material-icons-round">add</span> Novo Registro</button></div><div style="overflow-x:auto"><table><thead><tr>`;
     headers.forEach(h => html += `<th>${h}</th>`);
     html += `<th>Ações</th></tr></thead><tbody>`;
@@ -279,28 +256,17 @@ function renderTable(title, type, data, headers, modalNovoFn) {
     } else {
         data.forEach(item => {
             html += `<tr>`;
-            headers.forEach(h => {
-                let key = h.toLowerCase();
-                if(key === 'autor') key = 'autorNome'; 
-                html += `<td>${item[key] || '---'}</td>`;
-            });
-            
+            headers.forEach(h => { let key = h.toLowerCase(); if(key === 'autor') key = 'autorNome'; html += `<td>${item[key] || '---'}</td>`; });
             let editFn = type === 'ligas' ? 'openLigaModal' : type === 'pesquisas' ? 'openPesquisaModal' : type === 'eventos' ? 'openEventoModal' : type === 'extensao' ? 'openExtensaoModal' : 'openAtividadeModal';
-
-            html += `<td style="white-space: nowrap;">`;
-            html += `<button class="btn btn-warning" style="margin-right:6px;" onclick="${editFn}(${item.id})" title="Editar"><span class="material-icons-round">edit</span></button>`;
-            if(hasReport) {
-                html += `<button class="btn btn-success" style="margin-right:6px;" onclick="openRelatorioModal('${type}', ${item.id})" title="Relatório"><span class="material-icons-round">description</span></button>`;
-            }
-            html += `<button class="btn btn-danger" onclick="deleteItem('${type}', ${item.id})" title="Excluir"><span class="material-icons-round">delete</span></button>`;
-            html += `</td></tr>`;
+            html += `<td style="white-space: nowrap;"><button class="btn btn-warning" style="margin-right:6px;" onclick="${editFn}(${item.id})" title="Editar"><span class="material-icons-round">edit</span></button>`;
+            if(hasReport) { html += `<button class="btn btn-success" style="margin-right:6px;" onclick="openRelatorioModal('${type}', ${item.id})" title="Relatório"><span class="material-icons-round">description</span></button>`; }
+            html += `<button class="btn btn-danger" onclick="deleteItem('${type}', ${item.id})" title="Excluir"><span class="material-icons-round">delete</span></button></td></tr>`;
         });
     }
-    html += `</tbody></table></div></div>`;
-    return html;
+    html += `</tbody></table></div></div>`; return html;
 }
 
-// --- 5. LÓGICA DO PAINEL ADMIN (GESTÃO DE USUÁRIOS) ---
+// --- 5. PAINEL ADMIN ---
 async function carregarPainelAdmin() {
     try {
         const querySnapshot = await getDocs(collection(dbFirestore, "usuarios"));
@@ -323,18 +289,8 @@ function closeActiveModal() { const m = document.getElementById('activeModal'); 
 function pushOrUpdate(type, id, novoDado) {
     if (id) {
         const idx = db[type].findIndex(i => i.id === id);
-        if (idx !== -1) {
-            novoDado.id = db[type][idx].id;
-            novoDado.autorEmail = db[type][idx].autorEmail;
-            novoDado.autorNome = db[type][idx].autorNome;
-            db[type][idx] = novoDado;
-        }
-    } else {
-        novoDado.id = Date.now();
-        novoDado.autorEmail = currentUser.email;
-        novoDado.autorNome = currentUser.nome;
-        db[type].push(novoDado);
-    }
+        if (idx !== -1) { novoDado.id = db[type][idx].id; novoDado.autorEmail = db[type][idx].autorEmail; novoDado.autorNome = db[type][idx].autorNome; db[type][idx] = novoDado; }
+    } else { novoDado.id = Date.now(); novoDado.autorEmail = currentUser.email; novoDado.autorNome = currentUser.nome; db[type].push(novoDado); }
 }
 
 function openLigaModal(id = null) { const item = id ? db.ligas.find(i => i.id === id) : {}; showModal(`<h3 style="color:var(--color-primary); margin-bottom:15px; border-bottom:2px solid #eee; padding-bottom:10px;">${id ? 'Editar Liga' : 'Nova Liga Acadêmica'}</h3><form onsubmit="event.preventDefault(); saveLiga(${id});"><div class="form-group"><label>Nome da Liga</label><input id="lNome" class="form-control" value="${item.nome || ''}" required></div><div class="form-row"><div class="form-group"><label>Sigla</label><input id="lSigla" class="form-control" value="${item.sigla || ''}" required></div><div class="form-group"><label>Tutor Responsável</label><input id="lTutor" class="form-control" value="${item.tutor || ''}" required></div></div><div style="text-align:right; margin-top:15px"><button type="submit" class="btn btn-primary"><span class="material-icons-round">save</span> Salvar Liga</button></div></form>`); }
@@ -383,4 +339,80 @@ async function saveRelatorio(type, itemId) {
 
 async function deleteItem(type, id) { if(!confirm('Deseja excluir definitivamente este registro?')) return; db[type] = db[type].filter(i => i.id !== id); if (type === 'pesquisas') db.relatoriosPesquisa = db.relatoriosPesquisa.filter(r => r.itemId !== id); if (type === 'eventos') db.relatoriosEvento = db.relatoriosEvento.filter(r => r.itemId !== id); if (type === 'extensao') db.relatoriosExtensao = db.relatoriosExtensao.filter(r => r.itemId !== id); await saveDb(); renderPage(currentPage); }
 
-window.renderPage = renderPage; window.openLigaModal = openLigaModal; window.openPesquisaModal = openPesquisaModal; window.openEventoModal = openEventoModal; window.openExtensaoModal = openExtensaoModal; window.openAtividadeModal = openAtividadeModal; window.openRelatorioModal = openRelatorioModal; window.closeActiveModal = closeActiveModal; window.deleteItem = deleteItem; window.gerarPDF = gerarPDF; window.updateFileList = updateFileList; window.saveLiga = saveLiga; window.savePesquisa = savePesquisa; window.saveEvento = saveEvento; window.saveExtensao = saveExtensao; window.saveAtividade = saveAtividade; window.saveRelatorio = saveRelatorio; window.loginComGoogle = loginComGoogle; window.fazerLogout = fazerLogout; window.mudarStatusUsuario = mudarStatusUsuario;
+
+// --- 🧭 TUTORIAL INTERATIVO (INTRO.JS) ---
+function iniciarTour() {
+    renderPage('dashboard');
+    setTimeout(() => {
+        // @ts-ignore
+        introJs().setOptions({
+            nextLabel: 'Próximo',
+            prevLabel: 'Voltar',
+            doneLabel: 'Entendi!',
+            showStepNumbers: true,
+            showProgress: true,
+            steps: [
+                {
+                    title: "👋 Bem-vindo(a)!",
+                    intro: "Este é o seu novo sistema de Gestão de Ligas Acadêmicas. Vamos fazer um tour rápido de 1 minuto para você aprender a usar."
+                },
+                {
+                    element: document.querySelector('.sidebar'),
+                    title: "Navegação",
+                    intro: "Aqui no menu lateral você encontra todos os módulos. É por aqui que você vai transitar entre Ligas, Pesquisas e Eventos.",
+                    position: 'right'
+                },
+                {
+                    element: document.querySelector('.page-header'),
+                    title: "Painel de Controle",
+                    intro: "No Dashboard, você acompanha o volume de registros. Você só visualiza aquilo que você mesmo cadastrou (a menos que seja da Coordenação).",
+                    position: 'bottom'
+                }
+            ]
+        }).oncomplete(function() {
+            renderPage('ligas');
+            setTimeout(() => {
+                // @ts-ignore
+                introJs().setOptions({
+                    nextLabel: 'Concluir',
+                    showBullets: false,
+                    steps: [
+                        {
+                            element: document.querySelector('.btn-primary'),
+                            title: "Criar Registros",
+                            intro: "Em qualquer aba que você entrar, sempre haverá este botão azul para adicionar um novo registro.",
+                            position: 'left'
+                        },
+                        {
+                            title: "Relatórios Oficiais",
+                            intro: "Depois de criar um registro, você verá botões na tabela para <b>Editar</b>, enviar <b>Relatórios/Anexos</b> e <b>Gerar o PDF</b> assinado."
+                        }
+                    ]
+                }).start();
+            }, 300);
+        }).start();
+    }, 300);
+}
+
+// --- EXPOSIÇÃO GLOBAL ---
+window.renderPage = renderPage;
+window.openLigaModal = openLigaModal;
+window.openPesquisaModal = openPesquisaModal;
+window.openEventoModal = openEventoModal;
+window.openExtensaoModal = openExtensaoModal;
+window.openAtividadeModal = openAtividadeModal;
+window.openRelatorioModal = openRelatorioModal;
+window.closeActiveModal = closeActiveModal;
+window.deleteItem = deleteItem;
+window.gerarPDF = gerarPDF;
+window.updateFileList = updateFileList;
+window.saveLiga = saveLiga;
+window.savePesquisa = savePesquisa;
+window.saveEvento = saveEvento;
+window.saveExtensao = saveExtensao;
+window.saveAtividade = saveAtividade;
+window.saveRelatorio = saveRelatorio;
+window.loginComGoogle = loginComGoogle;
+window.fazerLogout = fazerLogout;
+window.mudarStatusUsuario = mudarStatusUsuario;
+window.iniciarTour = iniciarTour;
